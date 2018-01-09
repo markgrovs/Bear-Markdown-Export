@@ -13,8 +13,10 @@ import shutil
 
 HOME = os.getenv('HOME', '')
 
-export_path = os.path.join(HOME, 'Downloads', 'Bear Export')
-temp_path = os.path.join(HOME, 'Downloads', 'BearExportTemp') # NOTE! Do not change "BearExportTemp" name!!!
+export_path = os.path.join(HOME, 'Dropbox', 'Bear Export')
+# export_path = os.path.join(HOME, 'OneDrive', 'Bear Export')
+
+temp_path = os.path.join(HOME, 'Temp', 'BearExportTemp') # NOTE! Do not change the "BearExportTemp" folder name!!!
 
 # time_stamp = datetime.datetime.now().strftime("%Y-%m-%d_%H%M")
 
