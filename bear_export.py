@@ -1,7 +1,10 @@
 # bear_export.py
 '''
 Markdown export from Bear sqlite database 
-github/rovest, rorves@twitter: 2018-01-08 at 21:01 EST
+github/rovest, rorves@twitter: 2018-01-09 at 12:11 EST
+Update: 
+- added links to original Bear note in comment block
+- Changed tags from # to @ to avoid Markdown confusion with headings
 '''
 
 import sqlite3
@@ -33,22 +36,30 @@ def main():
     get_markdown()
     conn.close()
     sync_files()
-
+    print('Export completed to:')
+    print(export_path)
 
 def get_markdown():
     query = "SELECT * FROM `ZSFNOTE` WHERE `ZTRASHED` LIKE '0'"
     c = conn.execute(query)
     for row in c:
         title = row['ZTITLE']
-        md_text = row['ZTEXT']
+        md_text = clean_text(row['ZTEXT'])
         creation_date = row['ZCREATIONDATE']
         modified = row['ZMODIFICATIONDATE']
-        filename = clean_title(title) + date_time_conv(creation_date) + '.md'
+        uuid = row['ZUNIQUEIDENTIFIER']
+        title_cleaned = clean_title(title)
+        filename = title_cleaned + date_time_conv(creation_date) + '.md'
         filepath = os.path.join(temp_path, filename)
         mod_dt = dt_conv(modified)
+        bear_link = 'bear://x-callback-url/open-note?id='
+        md_text += '\n<!--\n[' + title_cleaned + '](' + bear_link + uuid + ')\n-->\n'
         write_file(filepath, md_text, mod_dt)
         #print(date_time_conv(creation_date))
 
+
+def clean_text(md_text):
+    return re.sub(r'\#([a-zA-Z])', r'@\1', md_text)
 
 def clean_title(title):
     title = title[:56]
