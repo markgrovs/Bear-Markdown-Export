@@ -39,6 +39,7 @@ def main():
     print('Export completed to:')
     print(export_path)
 
+
 def get_markdown():
     query = "SELECT * FROM `ZSFNOTE` WHERE `ZTRASHED` LIKE '0'"
     c = conn.execute(query)
@@ -48,12 +49,11 @@ def get_markdown():
         creation_date = row['ZCREATIONDATE']
         modified = row['ZMODIFICATIONDATE']
         uuid = row['ZUNIQUEIDENTIFIER']
-        title_cleaned = clean_title(title)
-        filename = title_cleaned + date_time_conv(creation_date) + '.md'
+        filename = clean_title(title) + date_time_conv(creation_date) + '.md'
         filepath = os.path.join(temp_path, filename)
         mod_dt = dt_conv(modified)
         bear_link = 'bear://x-callback-url/open-note?id='
-        md_text += '\n<!--\n[' + title_cleaned + '](' + bear_link + uuid + ')\n-->\n'
+        md_text += '\n<!--\n[' + title + '](' + bear_link + uuid + ')\n-->\n'
         write_file(filepath, md_text, mod_dt)
         #print(date_time_conv(creation_date))
 
