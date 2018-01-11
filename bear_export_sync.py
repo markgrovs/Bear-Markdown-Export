@@ -4,7 +4,8 @@
 
 '''
 # Markdown export from Bear sqlite database 
-github/rovest, rorves@twitter: 2018-01-10 at 22:57 EST
+Version 0.04, 2018-01-11 at 05:59 EST
+github/rovest, rorves@twitter
 
 ## Syncing external updates:
 
@@ -31,8 +32,8 @@ import fnmatch
 
 HOME = os.getenv('HOME', '')
 
-export_path = os.path.join(HOME, 'Dropbox', 'Bear Export')
-# export_path = os.path.join(HOME, 'OneDrive', 'Bear Export')
+# export_path = os.path.join(HOME, 'Dropbox', 'Bear Notes')
+export_path = os.path.join(HOME, 'OneDrive', 'Bear Notes')
 
 sync_inbox = os.path.join(HOME, 'Temp', 'BearSyncInbox')
 temp_path = os.path.join(HOME, 'Temp', 'BearExportTemp') # NOTE! Do not change the "BearExportTemp" folder name!!!
@@ -86,12 +87,12 @@ def write_time_stamp():
                datetime.datetime.now().strftime("%Y-%m-%d at %H:%M:%S"), 0)
 
 
-def hide_tags(md_text):
-    # Hide tags:
-    # return re.sub(r'\#([a-zA-Z])', r'@\1', md_text)
-    md_text =  re.sub(r'\#([\w]+)(?= )?', r'<!--#\1-->', md_text)
-    md_text = re.sub(r'\<\!--\#(.+?)--\>(.+?)\#(?=\n)', r'<!--#\1\2#-->', md_text)
-    return md_text
+# def hide_tags(md_text):
+#     # Hide tags:
+#     # return re.sub(r'\#([a-zA-Z])', r'@\1', md_text)
+#     md_text =  re.sub(r'\#([\w]+)(?= )?', r'<!--#\1-->', md_text)
+#     md_text = re.sub(r'\<\!--\#(.+?)--\>(.+?)\#(?=\n)', r'<!--#\1\2#-->', md_text)
+#     return md_text
 
 
 def clean_title(title):
@@ -137,6 +138,11 @@ def date_time_conv(dtnum):
     dtdate = datetime.datetime.fromtimestamp(newnum)
     #print(newnum, dtdate)
     return dtdate.strftime(' - %Y-%m-%d_%H%M') 
+
+
+def time_stamp_ts(ts):
+    dtdate = datetime.datetime.fromtimestamp(ts)
+    return dtdate.strftime('%Y-%m-%d at %H:%M') 
 
 
 def date_conv(dtnum):
@@ -192,7 +198,7 @@ def check_for_md_updates(md_path, sync_inbox):
                 write_file(synced_file, md_text, ts)
                 os.remove(md_file)
                 print("*** File to md_sync_inbox: " + synced_file)
-                update_bear_note(md_text, ts_last_export)
+                update_bear_note(md_text, ts_last_export, ts)
                 print("*** Bear Note Updated")
                 
     # Finally, update synced timestamp file:
@@ -202,7 +208,7 @@ def check_for_md_updates(md_path, sync_inbox):
     return files_found
 
 
-def update_bear_note(md_text, ts_last_export):
+def update_bear_note(md_text, ts_last_export, ts):
     uuid = ''
     match = re.search(r'\{BearID:(.+?)\}', md_text)
     if match:
@@ -212,17 +218,21 @@ def update_bear_note(md_text, ts_last_export):
 
         sync_conflict = check_sync_conflict(uuid, ts_last_export)
 
-        lines = md_text.splitlines()
         link_original = 'bear://x-callback-url/open-note?id=' + uuid
         if sync_conflict:
             message = '::[External update: Sync conflict with original note!!](' + link_original + ')::'
         else:
             message = '::[External update: Original note moved to trash.](' + link_original + ')::'        
+        lines = md_text.splitlines()
+        lines.insert(1, message)
+        md_text = '\n'.join(lines)
+    else:
+        message = '::New external Note - ' + time_stamp_ts(ts) + '::'
+        lines = md_text.splitlines()
         lines.insert(1, message)
         md_text = '\n'.join(lines)
 
-
-    # Add remote updated note to Bear in any case:
+    # Add remote update of note to Bear in any case: (if updated, new or sync conflict)
     x_create = 'bear://x-callback-url/create?show_window=no&text=' + urllib.parse.quote(md_text)
     subprocess.call(["open", x_create])
     time.sleep(.2)
@@ -249,13 +259,11 @@ def check_sync_conflict(uuid, ts_last_export):
         print(dtdate.strftime('%Y-%m-%d %H:%M'))
         print(title, ts_last_export, mod_dt)
         conflict = mod_dt > ts_last_export
-
     return conflict
 
 
 def notify(message):
     title = "ul_sync_md.py"
-
     try:
         # Uses "terminal-notifier", download at:
         # https://github.com/julienXX/terminal-notifier/releases/download/2.0.0/terminal-notifier-2.0.0.zip
@@ -264,7 +272,6 @@ def notify(message):
                          '-message', message, "-title", title, '-sound', 'default'])
     except:
         print('* "terminal-notifier.app" is missing!')
-
     # print("* Message:", str(message.encode("utf-8")))
     return
 
