@@ -4,7 +4,7 @@
 
 '''
 # Markdown export from Bear sqlite database 
-Version 0.04, 2018-01-11 at 05:59 EST
+Version 0.05, 2018-01-11 at 06:35 EST
 github/rovest, rorves@twitter
 
 ## Syncing external updates:
@@ -17,7 +17,8 @@ First checking for Changes in Markdown files (previously exported from Bear)
 
 Then exporting Markdown from Bear sqlite db.
 * Uses rsync for copying, so only markdown files of changed sheets will be updated  
-and synced by Dropbox (or other sync services)
+  and synced by Dropbox (or other sync services)
+* "Hide" tags from being seen as H1 in other Markdown apps.
 '''
 
 import sqlite3
@@ -73,6 +74,7 @@ def export_markdown():
         filename = clean_title(title) + date_time_conv(creation_date) + '.md'
         filepath = os.path.join(temp_path, filename)
         mod_dt = dt_conv(modified)
+        md_text = hide_tags(md_text)
         md_text += '\n\n{BearID:' + uuid + '}\n'
         write_file(filepath, md_text, mod_dt)
 
@@ -87,12 +89,16 @@ def write_time_stamp():
                datetime.datetime.now().strftime("%Y-%m-%d at %H:%M:%S"), 0)
 
 
-# def hide_tags(md_text):
-#     # Hide tags:
-#     # return re.sub(r'\#([a-zA-Z])', r'@\1', md_text)
-#     md_text =  re.sub(r'\#([\w]+)(?= )?', r'<!--#\1-->', md_text)
-#     md_text = re.sub(r'\<\!--\#(.+?)--\>(.+?)\#(?=\n)', r'<!--#\1\2#-->', md_text)
-#     return md_text
+def hide_tags(md_text):
+    # Hide tags from being seen as H1:
+    md_text =  re.sub(r'\#([\w]+)(?= )?', r'.#\1', md_text)
+    return md_text
+
+
+def restore_tags(md_text):
+    # Tags back to normal Bear tags:
+    md_text =  re.sub(r'\.\#([\w]+)(?= )?', r'#\1', md_text)
+    return md_text
 
 
 def clean_title(title):
@@ -195,6 +201,7 @@ def check_for_md_updates(md_path, sync_inbox):
                     count += 1
                 md_text = read_file(md_file)
                 ts = get_file_date(md_file)
+                # *** MV file would work better here:
                 write_file(synced_file, md_text, ts)
                 os.remove(md_file)
                 print("*** File to md_sync_inbox: " + synced_file)
@@ -210,6 +217,7 @@ def check_for_md_updates(md_path, sync_inbox):
 
 def update_bear_note(md_text, ts_last_export, ts):
     uuid = ''
+    md_text = restore_tags(md_text)
     match = re.search(r'\{BearID:(.+?)\}', md_text)
     if match:
         uuid = match.group(1)

@@ -1,5 +1,5 @@
 ## Markdown export and sync of Bear notes
-_2018-01-10 at 23:26 EST_
+_v.0.05: 2018-01-11 at 06:37 EST_
 
 Use this to read or update your Bear notes online with OneDrive or Dropbox. Or sync to Windows for reading or update there with any Markdown editor of choice.
 
@@ -21,3 +21,5 @@ Then exports Markdown from Bear sqlite db.
 * Keeps original modification date on export file
 * Uses rsync to only update changed files in Dropbox or OneDrive folders
 * Appends creation date to filename to avoid “title-filename-collisions”
+* "Hides” tags from being seen as H1 in other Markdown apps: .#mytag
+
