@@ -1,5 +1,12 @@
 ## Markdown export and sync of Bear notes
-_github/rovest, rorves@twitter: 2018-01-10 at 22:57 EST_
+_2018-01-10 at 23:26 EST_
+
+Use this to read or update your Bear notes online with OneDrive or Dropbox. Or sync to Windows for reading or update there with any Markdown editor of choice.
+
+This Python script can be run manually or added to a cron job for automatic syncing.
+
+This is a beta version, and please feel free to improve or modify as needed. 
+
 
 ### Syncing updates from Dropbox, OneDrive, or other:
 First checks for external changes in Markdown files (previously exported from Bear)
