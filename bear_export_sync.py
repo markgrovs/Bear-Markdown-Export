@@ -4,7 +4,7 @@
 
 '''
 # Markdown export from Bear sqlite database 
-Version 0.05, 2018-01-11 at 17:01 EST
+Version 0.06, 2018-01-11 at 22:22 EST
 github/rovest, rorves@twitter
 
 ## Syncing external updates:
@@ -16,6 +16,7 @@ First checking for Changes in Markdown files (previously exported from Bear)
 * Moving changed files to a "Sync Inbox" as a backup. 
 
 Then exporting Markdown from Bear sqlite db.
+* Added check_if_modified() on database.sqlite to see if sync is needed
 * Uses rsync for copying, so only markdown files of changed sheets will be updated  
   and synced by Dropbox (or other sync services)
 * "Hide" tags from being seen as H1 in other Markdown apps.
@@ -40,28 +41,30 @@ sync_inbox = os.path.join(HOME, 'Temp', 'BearSyncInbox') # Backup of markdown fi
 temp_path = os.path.join(HOME, 'Temp', 'BearExportTemp') # NOTE! Do not change the "BearExportTemp" folder name!!!
 bear_db = os.path.join(HOME, 'Library/Containers/net.shinyfrog.bear/Data/Documents/Application Data/database.sqlite')
 
-conn = None
-
 
 def main():
-    global conn
+    sync_md_updates(export_path, sync_inbox)
+    if check_db_modified():
+        delete_old_temp_files()
+        export_markdown()
+        write_time_stamp()
+        sync_files()
+        print('Export completed to:')
+        print(export_path)
+        notify('Export completed')
+    else:
+        print('No notes needed export')
 
-    conn = sqlite3.connect(bear_db)
-    conn.row_factory = sqlite3.Row
-    check_for_md_updates(export_path, sync_inbox)
-    time.sleep(2)
-    clean_old_files()
-    export_markdown()
-    conn.close()
 
-    write_time_stamp()
-    sync_files()
-    print('Export completed to:')
-    print(export_path)
-    notify('Export completed')
+def check_db_modified():
+    db_ts = get_file_date(bear_db)
+    last_export_ts = get_file_date(os.path.join(export_path, ".export-time.txt"))
+    return db_ts > last_export_ts
 
 
 def export_markdown():
+    conn = sqlite3.connect(bear_db)
+    conn.row_factory = sqlite3.Row
     query = "SELECT * FROM `ZSFNOTE` WHERE `ZTRASHED` LIKE '0'"
     c = conn.execute(query)
     for row in c:
@@ -76,6 +79,7 @@ def export_markdown():
         md_text = hide_tags(md_text)
         md_text += '\n\n{BearID:' + uuid + '}\n'
         write_file(filepath, md_text, mod_dt)
+    conn.close()
 
 
 def write_time_stamp():
@@ -155,7 +159,7 @@ def date_conv(dtnum):
     return dtdate.strftime('%Y-%m-%d')
 
 
-def clean_old_files():
+def delete_old_temp_files():
     # Deletes all files in temp folder before new export using "shutil.rmtree()":
     # NOTE! CAUTION! Do not change this function unless you really know shutil.rmtree() well!
     if os.path.exists(temp_path) and "BearExportTemp" in temp_path:
@@ -182,7 +186,7 @@ def sync_files():
                      temp_path + "/", export_path])
 
 
-def check_for_md_updates(md_path, sync_inbox):
+def sync_md_updates(md_path, sync_inbox):
     ts_file = os.path.join(md_path, ".sync-time.txt")
     files_found = False
     if not os.path.exists(ts_file):
@@ -213,15 +217,16 @@ def check_for_md_updates(md_path, sync_inbox):
                 md_text = read_file(md_file)
                 ts = get_file_date(md_file)
                 write_file(synced_file, md_text, ts)
-                os.remove(md_file)
+                # os.remove(md_file)
                 print("*** File to md_sync_inbox: " + synced_file)
                 update_bear_note(md_text, ts_last_export, ts)
                 print("*** Bear Note Updated")
-                
-    # Finally, update synced timestamp file:
-    write_file(os.path.join(md_path, ".sync-time.txt"),
-               "Checked for Markdown updates to sync at: " +
-               datetime.datetime.now().strftime("%Y-%m-%d at %H:%M:%S"), 0)
+    if files_found:            
+        # Finally, update synced timestamp file:
+        write_file(os.path.join(md_path, ".sync-time.txt"),
+                "Checked for Markdown updates to sync at: " +
+                datetime.datetime.now().strftime("%Y-%m-%d at %H:%M:%S"), 0)
+        time.sleep(3)
     return files_found
 
 
@@ -235,12 +240,11 @@ def update_bear_note(md_text, ts_last_export, ts):
         md_text = re.sub(r'\{BearID\:' + uuid + r'\}', '', md_text).rstrip() + '\n'
 
         sync_conflict = check_sync_conflict(uuid, ts_last_export)
-
         link_original = 'bear://x-callback-url/open-note?id=' + uuid
         if sync_conflict:
-            message = '::[External update: Sync conflict with original note!!](' + link_original + ')::'
+            message = '::[Sync conflict! External update: See orignal:](' + link_original + ') ' + time_stamp_ts(ts) + '::'
         else:
-            message = '::[External update: Original note moved to trash.](' + link_original + ')::'        
+            message = '::[External update: Original in trash:](' + link_original + ') ' + time_stamp_ts(ts) + '::'     
         lines = md_text.splitlines()
         lines.insert(1, message)
         md_text = '\n'.join(lines)
@@ -266,6 +270,8 @@ def update_bear_note(md_text, ts_last_export, ts):
 def check_sync_conflict(uuid, ts_last_export):
     conflict = False
     # Stub: Check modified date of original note in Bear sqlite db!
+    conn = sqlite3.connect(bear_db)
+    conn.row_factory = sqlite3.Row
     query = "SELECT * FROM `ZSFNOTE` WHERE `ZTRASHED` LIKE '0' AND `ZUNIQUEIDENTIFIER` LIKE '" + uuid + "'"
     c = conn.execute(query)
     for row in c:
@@ -277,6 +283,7 @@ def check_sync_conflict(uuid, ts_last_export):
         print(dtdate.strftime('%Y-%m-%d %H:%M'))
         print(title, ts_last_export, mod_dt)
         conflict = mod_dt > ts_last_export
+    conn.close()
     return conflict
 
 
