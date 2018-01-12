@@ -1,24 +1,30 @@
 ## Markdown export and sync of Bear notes
 _v.0.07: 2018-01-12 at 12:21 EST_
 
-Use this to read or update your Bear notes online with OneDrive or Dropbox. Or sync to Windows for reading or update there with any Markdown editor of choice.
+Python script for export and roundtrip sync of Bear's notes to OneDrive, Dropbox, or any other sync service.
+* All Bear notes are exported as plain Markdown (text only in this version, so no media or file attachments are exported)
+* Edit your Bear notes online in browser on [OneDrive.com](https://onedrive.live.com). It has a nice editor for plain markdown.
+* Or read and edit your Bear notes on Windows or Android with any markdown editor of choice.   
+* Remote updates or new notes are synced back into Bear with this script (original image links will still work on return).
 
-This Python script can be run manually or added to a cron job for automatic syncing.
+Run it manually or add it to a cron job for automatic syncing (every 5 – 15 minutes, or whatever you prefer).
 
-This is a beta version, and please feel free to improve or modify as needed. 
+This is a concept/beta version, and please feel free to improve or modify as needed. 
 
-### Syncing updates from Dropbox, OneDrive, or other:
-First checks for external changes in Markdown files (previously exported from Bear)
-* Adding updated or new Notes to Bear with x-callback-url command
-* Marking updated note with message and link to original note.
-* Moving original note to trash (unless a sync conflict)
-* Moving changed files to a "Sync Inbox" as a backup. 
+### Sync external note edits back into Bear
+Checks for external edits in Markdown files (previously exported from Bear)
+* Adds updated or new Notes to Bear with x-callback-url command
+* Marks updated note with message and link to original note.
+* Moves original note to trash (unless a sync conflict)
+* Copies changed files to a "Sync Inbox" as a backup. 
 
 ### Markdown export to Dropbox, OneDrive, or other:
-Then exports Markdown from Bear sqlite db.
+Exports all nodes as plain markdown files from Bear's database.sqlite.
 * Checks modified timestamp on database.sqlite, so exports only when needed.
-* Uses rsync for copying, so only markdown files of changed sheets will be updated and synced by Dropbox (or other sync services)
-* Keeps original modification date on export file
-* Appends creation date to filename to avoid “title-filename-collisions”
-* "Hides” tags from being seen as H1 in other Markdown apps: .#mytag
+* Uses rsync for copying, so only changed notes need to be synced by Dropbox or other sync services
+* Sets Bear note's modification date on exported markdown files.
+* Appends Bear note's creation date to filename to avoid “title-filename-collisions”
+* "Hides” tags from being seen as H1 in other Markdown apps, by adding a period in front of tag: .#mytag  
+(this get striped off again at sync's import into Bear)
 
+Happy syncing! ;)
