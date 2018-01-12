@@ -21,9 +21,9 @@ Checks for external edits in Markdown files (previously exported from Bear):
 ### Markdown export to Dropbox, OneDrive, or other:
 Exports all notes from Bear's database.sqlite as plain markdown files:
 * Checks modified timestamp on database.sqlite, so exports only when needed.
-* Uses rsync for copying, so only changed notes need to be synced by Dropbox or other sync services
 * Sets Bear note's modification date on exported markdown files.
 * Appends Bear note's creation date to filename to avoid “title-filename-collisions”
+* Uses rsync for copying, so only changed notes need to be synced to Dropbox (or other sync services)
 * "Hides” tags from being seen as H1 in other Markdown apps, by adding a period in front of tag: .#mytag  
 (this get striped off again at sync's import into Bear)
 
