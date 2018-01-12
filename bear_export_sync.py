@@ -74,7 +74,7 @@ def export_markdown():
     c = conn.execute(query)
     for row in c:
         title = row['ZTITLE']
-        md_text = row['ZTEXT'].strip()
+        md_text = row['ZTEXT'].rstrip()
         creation_date = row['ZCREATIONDATE']
         modified = row['ZMODIFICATIONDATE']
         uuid = row['ZUNIQUEIDENTIFIER']
