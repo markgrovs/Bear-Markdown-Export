@@ -4,7 +4,7 @@
 
 '''
 # Markdown export from Bear sqlite database 
-Version 0.06, 2018-01-11 at 22:22 EST
+Version 0.07, 2018-01-12 at 11:22 EST
 github/rovest, rorves@twitter
 
 ## Syncing external updates:
@@ -43,7 +43,12 @@ bear_db = os.path.join(HOME, 'Library/Containers/net.shinyfrog.bear/Data/Documen
 
 
 def main():
-    sync_md_updates(export_path, sync_inbox)
+    if sync_md_updates():
+        # Update synced timestamp file:
+        write_file(os.path.join(export_path, ".sync-time.txt"),
+                "Checked for Markdown updates to sync at: " +
+                datetime.datetime.now().strftime("%Y-%m-%d at %H:%M:%S"), 0)
+        time.sleep(2)
     if check_db_modified():
         delete_old_temp_files()
         export_markdown()
@@ -51,7 +56,7 @@ def main():
         sync_files()
         print('Export completed to:')
         print(export_path)
-        notify('Export completed')
+        # notify('Export completed')
     else:
         print('No notes needed export')
 
@@ -186,48 +191,45 @@ def sync_files():
                      temp_path + "/", export_path])
 
 
-def sync_md_updates(md_path, sync_inbox):
-    ts_file = os.path.join(md_path, ".sync-time.txt")
-    files_found = False
+def sync_md_updates():
+    updates_found = False
+    ts_file = os.path.join(export_path, ".sync-time.txt")
     if not os.path.exists(ts_file):
         return False
     ts_last_export = os.path.getmtime(ts_file)
-    for root, dirnames, filenames in os.walk(md_path):
-        # This step walks down into all sub folders (if any).
-        # That's not really neccessary here since export is only to one flat folder.
-        # Nevertheless, it might still be good to leave it like this, in case you add Markdown files 
-        # to subfolders remotely. Then they will also be imported into Bear and not forgotten :)
+    for root, dirnames, filenames in os.walk(export_path):
+        '''
+        This step walks down into all sub folders (if any).
+        It's not really neccessary here since export is only to one flat folder.
+        Nevertheless, it might still be good to leave it like this, 
+        in case you add Markdown files to subfolders remotely. 
+        Then they will also be imported into Bear and not forgotten :)
+        '''
         for filename in fnmatch.filter(filenames, '*.md'):
             md_file = os.path.join(root, filename)
-            try:
-                ts = os.path.getmtime(md_file)
-            except:
-                pass
+            ts = os.path.getmtime(md_file)
             if ts > ts_last_export:
-                files_found = True
-                if not os.path.exists(sync_inbox):
-                    os.makedirs(sync_inbox)
-                synced_file = os.path.join(sync_inbox, filename)
-                count = 2
-                while os.path.exists(synced_file):
-                    # Making sure no previous identical filename to prevent overwrite:
-                    file_part = re.sub(r"(( - \d\d)?\.md)", r"", synced_file)
-                    synced_file = file_part + " - " + str(count).zfill(2) + ".md"
-                    count += 1
+                updates_found = True
                 md_text = read_file(md_file)
-                ts = get_file_date(md_file)
-                write_file(synced_file, md_text, ts)
-                # os.remove(md_file)
-                print("*** File to md_sync_inbox: " + synced_file)
+                backup_changed_file(filename, md_text, ts)
                 update_bear_note(md_text, ts_last_export, ts)
                 print("*** Bear Note Updated")
-    if files_found:            
-        # Finally, update synced timestamp file:
-        write_file(os.path.join(md_path, ".sync-time.txt"),
-                "Checked for Markdown updates to sync at: " +
-                datetime.datetime.now().strftime("%Y-%m-%d at %H:%M:%S"), 0)
-        time.sleep(3)
-    return files_found
+    return updates_found
+
+
+def  backup_changed_file(filename, md_text, ts):
+    if not os.path.exists(sync_inbox):
+        os.makedirs(sync_inbox)
+    synced_file = os.path.join(sync_inbox, filename)
+    count = 2
+    while os.path.exists(synced_file):
+        # Making sure no previous identical filename to prevent overwrite:
+        file_part = re.sub(r"(( - \d\d)?\.md)", r"", synced_file)
+        synced_file = file_part + " - " + str(count).zfill(2) + ".md"
+        count += 1
+    write_file(synced_file, md_text, ts)
+    # os.remove(md_file)
+    print("*** File to md_sync_inbox: " + filename)
 
 
 def update_bear_note(md_text, ts_last_export, ts):
@@ -262,7 +264,6 @@ def update_bear_note(md_text, ts_last_export, ts):
     if match and not sync_conflict:
         # Trash old original note:
         x_trash = 'bear://x-callback-url/trash?show_window=no&id=' + uuid
-        print(x_trash)
         subprocess.call(["open", x_trash])
         time.sleep(.2)
 
