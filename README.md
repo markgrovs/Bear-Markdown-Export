@@ -23,6 +23,8 @@ Exports all notes from Bear's database.sqlite as plain markdown files:
 * Checks modified timestamp on database.sqlite, so exports only when needed.
 * Sets Bear note's modification date on exported markdown files.
 * Appends Bear note's creation date to filename to avoid “title-filename-collisions”
+* Note IDs are included at bottom of markdown files to match original note on sync back:   
+{BearID:730A5BD2-0245-4EF7-BE16-A5217468DF0E-33519-0000429ADFD9221A}
 * Uses rsync for copying, so only changed notes need to be synced to Dropbox (or other sync services)
 * "Hides” tags from being displayed as H1 in other markdown apps by adding a period in front of all tags:   
 .#bear .#idea .#python   
