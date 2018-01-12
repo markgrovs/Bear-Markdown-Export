@@ -4,7 +4,7 @@
 
 '''
 # Markdown export from Bear sqlite database 
-Version 0.07, 2018-01-12 at 11:22 EST
+Version 0.07, 2018-01-12 at 17:12 EST
 github/rovest, rorves@twitter
 
 ## Syncing external updates:
@@ -110,7 +110,9 @@ def restore_tags(md_text):
 
 
 def clean_title(title):
-    title = title[:56]
+    title = title[:56].strip()
+    if title == "":
+        title = "Untitled"
     title = re.sub(r'[/\\*?$@!^&\|~:]', r'-', title)
     title = re.sub(r'-$', r'', title)    
     return title.strip()

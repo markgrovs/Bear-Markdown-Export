@@ -1,5 +1,5 @@
 ## Markdown export and sync of Bear notes
-_v.0.07: 2018-01-12 at 12:21 EST_
+_v.0.07: 2018-01-12 at 17:11 EST_
 
 Python script for export and roundtrip sync of Bear's notes to OneDrive, Dropbox, or any other sync service.
 * All Bear notes are exported as plain Markdown (text only in this version, so no media or file attachments are exported)
