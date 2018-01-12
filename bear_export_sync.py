@@ -4,7 +4,7 @@
 
 '''
 # Markdown export from Bear sqlite database 
-Version 0.05, 2018-01-11 at 06:35 EST
+Version 0.05, 2018-01-11 at 17:01 EST
 github/rovest, rorves@twitter
 
 ## Syncing external updates:
@@ -36,9 +36,8 @@ HOME = os.getenv('HOME', '')
 # export_path = os.path.join(HOME, 'Dropbox', 'Bear Notes')
 export_path = os.path.join(HOME, 'OneDrive', 'Bear Notes')
 
-sync_inbox = os.path.join(HOME, 'Temp', 'BearSyncInbox')
+sync_inbox = os.path.join(HOME, 'Temp', 'BearSyncInbox') # Backup of markdown files synced to Bear.
 temp_path = os.path.join(HOME, 'Temp', 'BearExportTemp') # NOTE! Do not change the "BearExportTemp" folder name!!!
-# time_stamp = datetime.datetime.now().strftime("%Y-%m-%d_%H%M")
 bear_db = os.path.join(HOME, 'Library/Containers/net.shinyfrog.bear/Data/Documents/Application Data/database.sqlite')
 
 conn = None
@@ -157,18 +156,26 @@ def date_conv(dtnum):
 
 
 def clean_old_files():
-    # Move all markdown files to temp folder using rsync:
+    # Deletes all files in temp folder before new export using "shutil.rmtree()":
+    # NOTE! CAUTION! Do not change this function unless you really know shutil.rmtree() well!
     if os.path.exists(temp_path) and "BearExportTemp" in temp_path:
-        # *** NOTE! Double checking that temp_path folder contains "BearExportTemp"
-        # *** Otherwise if accidentally empty or root,
-        # *** shutil.rmtree() will delete all files on your complete Hard Drive!!
+        # *** NOTE! Double checking that temp_path folder actually contains "BearExportTemp"
+        # *** Because if temp_path is accidentally empty or root,
+        # *** shutil.rmtree() will delete all files on your complete Hard Drive ;(
         shutil.rmtree(temp_path)
         # *** NOTE: USE rmtree() WITH EXTREME CAUTION!
     os.makedirs(temp_path)
 
 
 def sync_files():
-    # Move all markdown files to new folder using rsync:
+    # Moves markdown files to new folder using rsync:
+    # This is a very important step! 
+    # By first exporting all Bear notes to an emptied temp folder,
+    # rsync will only update destination if modified or size have changed.
+    # So only changed notes will be synced by Dropbox or OneDrive destinations.
+    # Rsync will also delete notes on destination if deleted in Bear.
+    # So doing it this way saves a lot of otherwise very complex programing.
+    # Thank you very much, Rsync! ;)
     if not os.path.exists(export_path):
         os.makedirs(export_path)
     subprocess.call(['rsync', '-r', '-t', '--delete',
@@ -182,6 +189,10 @@ def check_for_md_updates(md_path, sync_inbox):
         return False
     ts_last_export = os.path.getmtime(ts_file)
     for root, dirnames, filenames in os.walk(md_path):
+        # This step walks down into all sub folders (if any).
+        # That's not really neccessary here since export is only to one flat folder.
+        # Nevertheless, it might still be good to leave it like this, in case you add Markdown files 
+        # to subfolders remotely. Then they will also be imported into Bear and not forgotten :)
         for filename in fnmatch.filter(filenames, '*.md'):
             md_file = os.path.join(root, filename)
             try:
@@ -201,7 +212,6 @@ def check_for_md_updates(md_path, sync_inbox):
                     count += 1
                 md_text = read_file(md_file)
                 ts = get_file_date(md_file)
-                # *** MV file would work better here:
                 write_file(synced_file, md_text, ts)
                 os.remove(md_file)
                 print("*** File to md_sync_inbox: " + synced_file)
