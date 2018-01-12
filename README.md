@@ -5,7 +5,7 @@ Python script for export and roundtrip sync of Bear's notes to OneDrive, Dropbox
 * All Bear notes are exported as plain Markdown (text only in this version, so no media or file attachments are exported)
 * Edit your Bear notes online in browser on [OneDrive.com](https://onedrive.live.com). It has a nice editor for plain markdown.
 * Or read and edit your Bear notes on Windows or Android with any markdown editor of choice.   
-* Remote updates or new notes are synced back into Bear with this script (original image links will still work on return).
+* Remote edits or new notes are synced back into Bear with this script (original image links will still work on return:)
 
 Run it manually or add it to a cron job for automatic syncing (every 5 – 15 minutes, or whatever you prefer).
 
