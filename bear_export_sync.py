@@ -4,7 +4,7 @@
 
 '''
 # Markdown export from Bear sqlite database 
-Version 0.07, 2018-01-12 at 17:12 EST
+Version 0.08, 2018-01-13 at 00:25 EST
 github/rovest, rorves@twitter
 
 ## Syncing external updates:
@@ -199,6 +199,7 @@ def sync_md_updates():
     if not os.path.exists(ts_file):
         return False
     ts_last_export = os.path.getmtime(ts_file)
+    text_types = ('*.md', '*.txt')
     for root, dirnames, filenames in os.walk(export_path):
         '''
         This step walks down into all sub folders (if any).
@@ -207,15 +208,16 @@ def sync_md_updates():
         in case you add Markdown files to subfolders remotely. 
         Then they will also be imported into Bear and not forgotten :)
         '''
-        for filename in fnmatch.filter(filenames, '*.md'):
-            md_file = os.path.join(root, filename)
-            ts = os.path.getmtime(md_file)
-            if ts > ts_last_export:
-                updates_found = True
-                md_text = read_file(md_file)
-                backup_changed_file(filename, md_text, ts)
-                update_bear_note(md_text, ts_last_export, ts)
-                print("*** Bear Note Updated")
+        for pattern in text_types:
+            for filename in fnmatch.filter(filenames, pattern):
+                md_file = os.path.join(root, filename)
+                ts = os.path.getmtime(md_file)
+                if ts > ts_last_export:
+                    updates_found = True
+                    md_text = read_file(md_file)
+                    backup_changed_file(filename, md_text, ts)
+                    update_bear_note(md_text, ts_last_export, ts)
+                    print("*** Bear Note Updated")
     return updates_found
 
 
