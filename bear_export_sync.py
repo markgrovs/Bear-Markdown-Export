@@ -4,7 +4,7 @@
 
 '''
 # Markdown export from Bear sqlite database 
-Version 0.08, 2018-01-13 at 00:25 EST
+Version 0.09, 2018-01-13 at 11:19 EST
 github/rovest, rorves@twitter
 
 ## Syncing external updates:
@@ -41,19 +41,15 @@ sync_inbox = os.path.join(HOME, 'Temp', 'BearSyncInbox') # Backup of markdown fi
 temp_path = os.path.join(HOME, 'Temp', 'BearExportTemp') # NOTE! Do not change the "BearExportTemp" folder name!!!
 bear_db = os.path.join(HOME, 'Library/Containers/net.shinyfrog.bear/Data/Documents/Application Data/database.sqlite')
 
+sync_ts_file = os.path.join(export_path, ".sync-time.txt")
 
 def main():
-    if sync_md_updates():
-        # Update synced timestamp file:
-        write_file(os.path.join(export_path, ".sync-time.txt"),
-                "Checked for Markdown updates to sync at: " +
-                datetime.datetime.now().strftime("%Y-%m-%d at %H:%M:%S"), 0)
-        time.sleep(2)
+    sync_md_updates()
     if check_db_modified():
         delete_old_temp_files()
         export_markdown()
         write_time_stamp()
-        sync_files()
+        sync_files_from_temp()
         print('Export completed to:')
         print(export_path)
         # notify('Export completed')
@@ -62,6 +58,8 @@ def main():
 
 
 def check_db_modified():
+    if not os.path.exists(sync_ts_file):
+        return True
     db_ts = get_file_date(bear_db)
     last_export_ts = get_file_date(os.path.join(export_path, ".export-time.txt"))
     return db_ts > last_export_ts
@@ -89,11 +87,12 @@ def export_markdown():
 
 def write_time_stamp():
     # write to time-stamp.txt file (used during sync)
-    write_file(os.path.join(temp_path, ".export-time.txt"),
-               "Markdown from Bear written at: " +
+    export_ts_file = os.path.join(temp_path, ".export-time.txt")
+    sync_ts_file_temp = os.path.join(temp_path, ".sync-time.txt")
+
+    write_file(export_ts_file, "Markdown from Bear written at: " +
                datetime.datetime.now().strftime("%Y-%m-%d at %H:%M:%S"), 0)
-    write_file(os.path.join(temp_path, ".sync-time.txt"),
-               "Markdown from Bear written at: " +
+    write_file(sync_ts_file_temp, "Markdown from Bear written at: " +
                datetime.datetime.now().strftime("%Y-%m-%d at %H:%M:%S"), 0)
 
 
@@ -178,7 +177,7 @@ def delete_old_temp_files():
     os.makedirs(temp_path)
 
 
-def sync_files():
+def sync_files_from_temp():
     # Moves markdown files to new folder using rsync:
     # This is a very important step! 
     # By first exporting all Bear notes to an emptied temp folder,
@@ -195,10 +194,9 @@ def sync_files():
 
 def sync_md_updates():
     updates_found = False
-    ts_file = os.path.join(export_path, ".sync-time.txt")
-    if not os.path.exists(ts_file):
+    if not os.path.exists(sync_ts_file):
         return False
-    ts_last_export = os.path.getmtime(ts_file)
+    ts_last_export = os.path.getmtime(sync_ts_file)
     text_types = ('*.md', '*.txt')
     for root, dirnames, filenames in os.walk(export_path):
         '''
@@ -218,7 +216,22 @@ def sync_md_updates():
                     backup_changed_file(filename, md_text, ts)
                     update_bear_note(md_text, ts_last_export, ts)
                     print("*** Bear Note Updated")
+    if updates_found:
+        # Update synced timestamp file:
+        update_sync_time_file(0)
+        # Give Bear time to process updates:
+        time.sleep(3)
+        # Check again, just in case new updates synced from remote (OneDrive/Dropbox) 
+        # during this process!
+        # The logic is not 100% fool proof, but should be close to 99.99%
+        sync_md_updates() # Recursive call
     return updates_found
+
+
+def update_sync_time_file(ts):
+    write_file(sync_ts_file,
+        "Checked for Markdown updates to sync at: " +
+        datetime.datetime.now().strftime("%Y-%m-%d at %H:%M:%S"), ts)
 
 
 def  backup_changed_file(filename, md_text, ts):
