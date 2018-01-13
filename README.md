@@ -15,11 +15,11 @@ Run it manually or add it to a cron job for automatic syncing (every 5 – 15 mi
 This is a concept/beta version, and please feel free to improve or modify as needed. 
 
 
-### Sync external note edits back into Bear
+### Syncs external edits back into Bear
 Checks for external edits in Markdown files (previously exported from Bear):
 
-* Adds updated or new Notes to Bear with x-callback-url command
-* Marks updated note with message and link to original note.
+* Adds edited or new notes to Bear with x-callback-url command (checks modified against last export timestamp)
+* Marks edited note with message and link to original note.
 * Moves original note to trash (unless a sync conflict)
 * Copies changed files to a "Sync Inbox" as a backup. 
 
