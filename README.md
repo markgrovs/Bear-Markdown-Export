@@ -38,6 +38,6 @@ Exports all notes from Bear's database.sqlite as plain markdown files:
 .#bear .#idea .#python   
 (these are striped off again when synced back into Bear)
 
-You may have Bear on a Mac or iPad and want your notes on your Android phone. Or you have Bear on iPhone or iPad and want your notes on your Windows or Linux PC. Or you want to have them available online in a browser from any desktop computer. Here is a solution (or call it workaround) for now, until Bear comes with an online, Windows, or Android solution ;)
+You have Bear on Mac but also want your notes on your Android phone, on Linux or Windows machine at your office. Or you want them available online in a browser from any desktop computer. Here is a solution (or call it workaround) for now, until Bear comes with an online, Windows, or Android solution ;)
 
 Happy syncing! ;)
