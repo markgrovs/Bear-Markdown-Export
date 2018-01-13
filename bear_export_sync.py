@@ -4,7 +4,7 @@
 
 '''
 # Markdown export from Bear sqlite database 
-Version 0.09, 2018-01-13 at 11:19 EST
+Version 0.10, 2018-01-13 at 17:27 EST
 github/rovest, rorves@twitter
 
 ## Syncing external updates:
@@ -241,13 +241,12 @@ def  backup_changed_file(filename, md_text, ts):
     synced_file = os.path.join(sync_inbox, filename)
     count = 2
     while os.path.exists(synced_file):
-        # Making sure no previous identical filename to prevent overwrite:
+        # Adding sequence number to identical filenames, preventing overwrite:
         file_part = re.sub(r"(( - \d\d)?\.md)", r"", synced_file)
         synced_file = file_part + " - " + str(count).zfill(2) + ".md"
         count += 1
     write_file(synced_file, md_text, ts)
-    # os.remove(md_file)
-    print("*** File to md_sync_inbox: " + filename)
+    print("*** Copied file to md_sync_inbox: " + filename)
 
 
 def update_bear_note(md_text, ts, ts_last_export):
