@@ -18,7 +18,7 @@ This is a concept/beta version, and please feel free to improve or modify as nee
 ### Syncs external edits back into Bear
 Checks for external edits in Markdown files (previously exported from Bear):
 
-* Adds edited or new notes to Bear with x-callback-url command (checks modified against last export timestamp)
+* Adds edited or new notes to Bear with x-callback-url command (if modified > export timestamp)
 * Marks edited note with message and link to original note.
 * Moves original note to trash (unless a sync conflict)
 * Copies changed files to a "Sync Inbox" as a backup. 
