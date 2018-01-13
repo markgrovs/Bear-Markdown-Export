@@ -41,7 +41,10 @@ sync_inbox = os.path.join(HOME, 'Temp', 'BearSyncInbox') # Backup of markdown fi
 temp_path = os.path.join(HOME, 'Temp', 'BearExportTemp') # NOTE! Do not change the "BearExportTemp" folder name!!!
 bear_db = os.path.join(HOME, 'Library/Containers/net.shinyfrog.bear/Data/Documents/Application Data/database.sqlite')
 
-sync_ts_file = os.path.join(export_path, ".sync-time.txt")
+sync_ts_file = os.path.join(export_path, ".sync-time.log")
+export_ts_file = os.path.join(temp_path, ".export-time.log")
+sync_ts_file_temp = os.path.join(temp_path, ".sync-time.log")
+
 
 def main():
     sync_md_updates()
@@ -87,9 +90,6 @@ def export_markdown():
 
 def write_time_stamp():
     # write to time-stamp.txt file (used during sync)
-    export_ts_file = os.path.join(temp_path, ".export-time.txt")
-    sync_ts_file_temp = os.path.join(temp_path, ".sync-time.txt")
-
     write_file(export_ts_file, "Markdown from Bear written at: " +
                datetime.datetime.now().strftime("%Y-%m-%d at %H:%M:%S"), 0)
     write_file(sync_ts_file_temp, "Markdown from Bear written at: " +
@@ -196,7 +196,10 @@ def sync_md_updates():
     updates_found = False
     if not os.path.exists(sync_ts_file):
         return False
-    ts_last_export = os.path.getmtime(sync_ts_file)
+    ts_last_sync = os.path.getmtime(sync_ts_file)
+    ts_last_export = os.path.getmtime(export_ts_file)
+    # Update synced timestamp file:
+    update_sync_time_file(0)
     text_types = ('*.md', '*.txt')
     for root, dirnames, filenames in os.walk(export_path):
         '''
@@ -210,15 +213,13 @@ def sync_md_updates():
             for filename in fnmatch.filter(filenames, pattern):
                 md_file = os.path.join(root, filename)
                 ts = os.path.getmtime(md_file)
-                if ts > ts_last_export:
+                if ts > ts_last_sync:
                     updates_found = True
                     md_text = read_file(md_file)
                     backup_changed_file(filename, md_text, ts)
-                    update_bear_note(md_text, ts_last_export, ts)
+                    update_bear_note(md_text, ts, ts_last_export)
                     print("*** Bear Note Updated")
     if updates_found:
-        # Update synced timestamp file:
-        update_sync_time_file(0)
         # Give Bear time to process updates:
         time.sleep(3)
         # Check again, just in case new updates synced from remote (OneDrive/Dropbox) 
@@ -249,7 +250,7 @@ def  backup_changed_file(filename, md_text, ts):
     print("*** File to md_sync_inbox: " + filename)
 
 
-def update_bear_note(md_text, ts_last_export, ts):
+def update_bear_note(md_text, ts, ts_last_export):
     uuid = ''
     md_text = restore_tags(md_text)
     match = re.search(r'\{BearID:(.+?)\}', md_text)
