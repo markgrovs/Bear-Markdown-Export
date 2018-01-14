@@ -1,11 +1,13 @@
 ## Markdown export and sync of Bear notes
-_v.0.10: 2018-01-13 at 17:51 EST_
+_v.0.11: 2018-01-13 at 20:59 EST_
 
-Python script for export and roundtrip sync of Bear's notes to OneDrive, Dropbox, etc. Edit or share online in any browser: [OneDrive](http://OneDrive.com) has a nice online plain text editor and Dropbox has a nice Markdown preview, and allows for comments on your shared notes.
+Python script for export and roundtrip sync of Bear's notes to OneDrive, Dropbox, etc. Edit or share online in any browser: [OneDrive](http://OneDrive.com) has a nice online plain text editor and Dropbox has a nice markdown preview, and allows for comments on your shared notes.
 
 You can also use a markdown editor on Windows or Android with Dropbox or OneDrive. Remote edits and new notes get synced back into Bear with this script.
 
-It's a concept/beta version, so please feel free to improve or modify as needed. 
+Another option is using nvAlt.app as sync engine to Simplenote. Simplenote has online edit, publish, and share with collaboration. Simplenote also has client apps for Android, Windows, Linux. You will not get images synced over, but text and sync back to Bear will still work, and original images from Bear will still work on edited notes when returned to Bear. In this version, only one way export to Simplenote/nvAlt folder is implemented.
+
+This is a concept/beta version, and please feel free to improve or modify as needed. 
 
 * All Bear notes are exported as plain Markdown  
 	(Text only in this version, so no media or file attachments are exported.  

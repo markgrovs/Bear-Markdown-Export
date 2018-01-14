@@ -4,7 +4,7 @@
 
 '''
 # Markdown export from Bear sqlite database 
-Version 0.10, 2018-01-13 at 17:27 EST
+Version 0.11, 2018-01-13 at 20:22 EST
 github/rovest, rorves@twitter
 
 ## Syncing external updates:
@@ -34,16 +34,28 @@ import fnmatch
 
 HOME = os.getenv('HOME', '')
 
-# export_path = os.path.join(HOME, 'Dropbox', 'Bear Notes')
 export_path = os.path.join(HOME, 'OneDrive', 'Bear Notes')
+# NOTE! Only "export_path" is used for sync back to Bear!
+export_path_aux1 = os.path.join(HOME, 'Dropbox', 'Bear Notes')
+
+# Path to Simple note files that is synced with nvAlt.app: 
+# nvAlt should be open to enable sync!
+export_path_aux2 = os.path.join(HOME, 'Dropbox', 'My Notes/Notes') 
+# delete=True delete all notes on destination that is not in Bear
+# Use delete=False if you want to merge with existing Simplenote notes
+multi_export = [(export_path, True), (export_path_aux1, True), (export_path_aux2, False)]
 
 sync_inbox = os.path.join(HOME, 'Temp', 'BearSyncInbox') # Backup of markdown files synced to Bear.
 temp_path = os.path.join(HOME, 'Temp', 'BearExportTemp') # NOTE! Do not change the "BearExportTemp" folder name!!!
 bear_db = os.path.join(HOME, 'Library/Containers/net.shinyfrog.bear/Data/Documents/Application Data/database.sqlite')
 
-sync_ts_file = os.path.join(export_path, ".sync-time.log")
-export_ts_file = os.path.join(temp_path, ".export-time.log")
-sync_ts_file_temp = os.path.join(temp_path, ".sync-time.log")
+sync_ts = ".sync-time.log"
+export_ts = ".export-time.log"
+
+sync_ts_file = os.path.join(export_path, sync_ts)
+sync_ts_file_temp = os.path.join(temp_path, sync_ts)
+export_ts_file_exp = os.path.join(export_path, export_ts)
+export_ts_file = os.path.join(temp_path, export_ts)
 
 
 def main():
@@ -53,8 +65,6 @@ def main():
         export_markdown()
         write_time_stamp()
         sync_files_from_temp()
-        print('Export completed to:')
-        print(export_path)
         # notify('Export completed')
     else:
         print('No notes needed export')
@@ -64,7 +74,7 @@ def check_db_modified():
     if not os.path.exists(sync_ts_file):
         return True
     db_ts = get_file_date(bear_db)
-    last_export_ts = get_file_date(os.path.join(export_path, ".export-time.txt"))
+    last_export_ts = get_file_date(export_ts_file_exp)
     return db_ts > last_export_ts
 
 
@@ -186,10 +196,19 @@ def sync_files_from_temp():
     # Rsync will also delete notes on destination if deleted in Bear.
     # So doing it this way saves a lot of otherwise very complex programing.
     # Thank you very much, Rsync! ;)
-    if not os.path.exists(export_path):
-        os.makedirs(export_path)
-    subprocess.call(['rsync', '-r', '-t', '--delete',
-                     temp_path + "/", export_path])
+    for (dest_path, delete) in multi_export:
+        if not os.path.exists(dest_path):
+            os.makedirs(dest_path)
+        if delete: 
+            subprocess.call(['rsync', '-r', '-t', '--delete',
+                            temp_path + "/", dest_path])
+        else:
+            subprocess.call(['rsync', '-r', '-t',
+                            temp_path + "/", dest_path])
+
+        print('Export completed to:')
+        print(dest_path)
+
 
 
 def sync_md_updates():
