@@ -4,7 +4,7 @@
 
 '''
 # Markdown export from Bear sqlite database 
-Version 0.11, 2018-01-13 at 20:22 EST
+Version 0.12, 2018-01-15 at 06:41 EST
 github/rovest, rorves@twitter
 
 ## Syncing external updates:
@@ -34,16 +34,11 @@ import fnmatch
 
 HOME = os.getenv('HOME', '')
 
+# NOTE! Only "export_path" is used for sync-back to Bear!
 export_path = os.path.join(HOME, 'OneDrive', 'Bear Notes')
-# NOTE! Only "export_path" is used for sync back to Bear!
 export_path_aux1 = os.path.join(HOME, 'Dropbox', 'Bear Notes')
 
-# Path to Simple note files that is synced with nvAlt.app: 
-# nvAlt should be open to enable sync!
-export_path_aux2 = os.path.join(HOME, 'Dropbox', 'My Notes/Notes') 
-# delete=True delete all notes on destination that is not in Bear
-# Use delete=False if you want to merge with existing Simplenote notes
-multi_export = [(export_path, True), (export_path_aux1, True), (export_path_aux2, False)]
+multi_export = [export_path, export_path_aux1]
 
 sync_inbox = os.path.join(HOME, 'Temp', 'BearSyncInbox') # Backup of markdown files synced to Bear.
 temp_path = os.path.join(HOME, 'Temp', 'BearExportTemp') # NOTE! Do not change the "BearExportTemp" folder name!!!
@@ -64,7 +59,7 @@ def main():
         delete_old_temp_files()
         export_markdown()
         write_time_stamp()
-        sync_files_from_temp()
+        rsync_files_from_temp()
         # notify('Export completed')
     else:
         print('No notes needed export')
@@ -93,7 +88,7 @@ def export_markdown():
         filepath = os.path.join(temp_path, filename)
         mod_dt = dt_conv(modified)
         md_text = hide_tags(md_text)
-        md_text += '\n\n{BearID:' + uuid + '}\n'
+        md_text += '\n\n<!--{BearID:' + uuid + '}-->\n'
         write_file(filepath, md_text, mod_dt)
     conn.close()
 
@@ -187,7 +182,7 @@ def delete_old_temp_files():
     os.makedirs(temp_path)
 
 
-def sync_files_from_temp():
+def rsync_files_from_temp():
     # Moves markdown files to new folder using rsync:
     # This is a very important step! 
     # By first exporting all Bear notes to an emptied temp folder,
@@ -196,19 +191,13 @@ def sync_files_from_temp():
     # Rsync will also delete notes on destination if deleted in Bear.
     # So doing it this way saves a lot of otherwise very complex programing.
     # Thank you very much, Rsync! ;)
-    for (dest_path, delete) in multi_export:
+    for dest_path in multi_export:
         if not os.path.exists(dest_path):
             os.makedirs(dest_path)
-        if delete: 
-            subprocess.call(['rsync', '-r', '-t', '--delete',
-                            temp_path + "/", dest_path])
-        else:
-            subprocess.call(['rsync', '-r', '-t',
-                            temp_path + "/", dest_path])
-
+        subprocess.call(['rsync', '-r', '-t', '--delete',
+                         temp_path + "/", dest_path])
         print('Export completed to:')
         print(dest_path)
-
 
 
 def sync_md_updates():
@@ -272,10 +261,11 @@ def update_bear_note(md_text, ts, ts_last_export):
     uuid = ''
     md_text = restore_tags(md_text)
     match = re.search(r'\{BearID:(.+?)\}', md_text)
+    sync_conflict = False
     if match:
         uuid = match.group(1)
         # Remove old BearID: from new note
-        md_text = re.sub(r'\{BearID\:' + uuid + r'\}', '', md_text).rstrip() + '\n'
+        md_text = re.sub(r'\<\!--\{BearID\:' + uuid + r'\}--\>', '', md_text).rstrip() + '\n'
 
         sync_conflict = check_sync_conflict(uuid, ts_last_export)
         link_original = 'bear://x-callback-url/open-note?id=' + uuid
