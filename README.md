@@ -1,11 +1,15 @@
 ## Markdown export and sync of Bear notes
-_v.12: 2018-01-15 at 06:41 EST_
+_v.12: 2018-01-15_
 
 Python script for export and roundtrip sync of Bear's notes to OneDrive, Dropbox, etc. Edit or share online in any browser: [OneDrive](http://OneDrive.com) has a nice online plain text editor and Dropbox has a nice markdown preview, and allows for comments on your shared notes.
 
 You can also use a markdown editor on Windows or Android with Dropbox or OneDrive. Remote edits and new notes get synced back into Bear with this script.
 
 This is a concept/beta version, and please feel free to improve or modify as needed. 
+
+*See also: [Bear Power Pack](https://github.com/rovest/Bear-Power-Pack/blob/master/README.md)*
+
+## Features
 
 * All Bear notes are exported as plain Markdown  
 	(Text only in this version, so no media or file attachments are exported.  
