@@ -4,7 +4,7 @@
 
 '''
 # Markdown export from Bear sqlite database 
-Version 0.15, 2018-02-02 at 20:25 EST
+Version 0.16, 2018-02-02 at 21:25 EST
 github/rovest, rorves@twitter
 
 ## Syncing external updates:
@@ -274,9 +274,10 @@ def update_bear_note(md_text, ts, ts_last_export):
         md_text = re.sub(r'\<\!--\{BearID\:' + uuid + r'\}--\>', '', md_text).rstrip() + '\n'
 
         sync_conflict = check_sync_conflict(uuid, ts_last_export)
-        # link_original = 'bear://x-callback-url/open-note?id=' + uuid
         if sync_conflict:
+            link_original = 'bear://x-callback-url/open-note?id=' + uuid
             message = '::Sync conflict! External update: ' + time_stamp_ts(ts) + '::'
+            message += '\n[Click here to see original Bear note](' + link_original + ')'
             x_create = 'bear://x-callback-url/create?show_window=no' 
             bear_x_callback(x_create, md_text, message, '')   
         else:
