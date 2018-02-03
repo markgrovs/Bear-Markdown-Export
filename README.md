@@ -1,5 +1,5 @@
 ## Markdown export and sync of Bear notes
-_v.15: 2018-02-02 at 20:25 EST_
+_v.0.15: 2018-02-02 at 20:25 EST_
 
 Python script for export and roundtrip sync of Bear's notes to OneDrive, Dropbox, etc. Edit or share online in any browser: [OneDrive](http://OneDrive.com) has a nice online plain text editor and Dropbox has a nice markdown preview, and allows for comments on your shared notes.
 
