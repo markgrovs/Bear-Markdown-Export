@@ -4,22 +4,25 @@
 
 '''
 # Markdown export from Bear sqlite database 
-Version 0.14, 2018-02-02 at 19:13 EST
+Version 0.15, 2018-02-02 at 20:25 EST
 github/rovest, rorves@twitter
 
 ## Syncing external updates:
 
 First checking for Changes in Markdown files (previously exported from Bear)
-* Adding updated or new Notes to Bear with x-callback-url command
-* Marking updated note with message and link to original note.
-* Moving original note to trash (unless a sync conflict)
-* Moving changed files to a "Sync Inbox" as a backup. 
+* Replacing text in original note with callback-url replace command   
+  (Keeping original creation date)
+  If Changes in title it will be added just below original title
+* New notes are added to Bear (with x-callback-url command)
+* Backing up original note as file to BearSyncBackup folder  
+  (unless a sync conflict, then both notes will be there)
 
 Then exporting Markdown from Bear sqlite db.
-* Added check_if_modified() on database.sqlite to see if sync is needed
+* check_if_modified() on database.sqlite to see if export is needed
 * Uses rsync for copying, so only markdown files of changed sheets will be updated  
   and synced by Dropbox (or other sync services)
-* "Hide" tags from being seen as H1 in other Markdown apps.
+* "Hide" tags with period: ".#tag" from being seen as H1 in other Markdown apps.   
+  (This is removed if sync-back above)
 '''
 
 # Change 'Dropbox' to 'Box', 'Onedrive' or whatever folder of sync service you need:
@@ -53,8 +56,8 @@ multi_export = [(export_path, True)] # only one folder output here.
 # Set this flag fo False only for folders to keep old deleted versions of notes
 # multi_export = [(export_path, True), (export_path_aux1, False), (export_path_aux2, True)]
 
-sync_backup = os.path.join(HOME, 'OneDrive', 'BearSyncBackup') # Backup of original note before sync to Bear.
-temp_path = os.path.join(HOME, 'Temp', 'BearExportTemp') # NOTE! Do not change the "BearExportTemp" folder name!!!
+sync_backup = os.path.join(HOME, my_sync_folder, 'BearSyncBackup') # Backup of original note before sync to Bear.
+temp_path = os.path.join(HOME, 'Temp', 'BearExportTemp')  # NOTE! Do not change the "BearExportTemp" folder name!!!
 bear_db = os.path.join(HOME, 'Library/Containers/net.shinyfrog.bear/Data/Documents/Application Data/database.sqlite')
 
 sync_ts = ".sync-time.log"
