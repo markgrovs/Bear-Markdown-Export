@@ -4,7 +4,7 @@
 
 '''
 # Markdown export from Bear sqlite database 
-Version 0.12, 2018-01-15 at 06:41 EST
+Version 0.14, 2018-02-02 at 19:13 EST
 github/rovest, rorves@twitter
 
 ## Syncing external updates:
@@ -22,6 +22,10 @@ Then exporting Markdown from Bear sqlite db.
 * "Hide" tags from being seen as H1 in other Markdown apps.
 '''
 
+# Change 'Dropbox' to 'Box', 'Onedrive' or whatever folder of sync service you need:
+my_sync_folder = 'Dropbox'  # Your user HOME path is added below
+
+
 import sqlite3
 import datetime
 import re
@@ -32,15 +36,21 @@ import time
 import shutil
 import fnmatch
 
+
+# NOTE! "export_path" is used for sync-back to Bear, so don't change this variable name!
 HOME = os.getenv('HOME', '')
+export_path = os.path.join(HOME, my_sync_folder, 'Bear Notes')
+multi_export = [(export_path, True)] # only one folder output  
 
-# NOTE! Only "export_path" is used for sync-back to Bear!
-export_path = os.path.join(HOME, 'OneDrive', 'Bear Notes')
-export_path_aux1 = os.path.join(HOME, 'Dropbox', 'Bear Notes')
+# Sample for multi folder export:
+# export_path_aux1 = os.path.join(HOME, 'OneDrive', 'Bear Notes')
+# export_path_aux2 = os.path.join(HOME, 'Box', 'Bear Notes')
 
-multi_export = [export_path, export_path_aux1]
+# NOTE! All files in export path not in Bear will be deleted if delete flag is "True"!
+# Set this flag fo False only for folders to keep old deleted versions of notes
+# multi_export = [(export_path, True), (export_path_aux1, False), (export_path_aux2, True)]
 
-sync_inbox = os.path.join(HOME, 'Temp', 'BearSyncInbox') # Backup of markdown files synced to Bear.
+sync_backup = os.path.join(HOME, 'OneDrive', 'BearSyncBackup') # Backup of original note before sync to Bear.
 temp_path = os.path.join(HOME, 'Temp', 'BearExportTemp') # NOTE! Do not change the "BearExportTemp" folder name!!!
 bear_db = os.path.join(HOME, 'Library/Containers/net.shinyfrog.bear/Data/Documents/Application Data/database.sqlite')
 
@@ -191,11 +201,15 @@ def rsync_files_from_temp():
     # Rsync will also delete notes on destination if deleted in Bear.
     # So doing it this way saves a lot of otherwise very complex programing.
     # Thank you very much, Rsync! ;)
-    for dest_path in multi_export:
+    for (dest_path, delete) in multi_export:
         if not os.path.exists(dest_path):
             os.makedirs(dest_path)
-        subprocess.call(['rsync', '-r', '-t', '--delete',
-                         temp_path + "/", dest_path])
+        if delete:
+            subprocess.call(['rsync', '-r', '-t', '--delete',
+                            temp_path + "/", dest_path])
+        else:
+            subprocess.call(['rsync', '-r', '-t',
+                            temp_path + "/", dest_path])
         print('Export completed to:')
         print(dest_path)
 
@@ -224,7 +238,7 @@ def sync_md_updates():
                 if ts > ts_last_sync:
                     updates_found = True
                     md_text = read_file(md_file)
-                    backup_changed_file(filename, md_text, ts)
+                    # backup_changed_file(filename, md_text, ts)
                     update_bear_note(md_text, ts, ts_last_export)
                     print("*** Bear Note Updated")
     if updates_found:
@@ -243,20 +257,6 @@ def update_sync_time_file(ts):
         datetime.datetime.now().strftime("%Y-%m-%d at %H:%M:%S"), ts)
 
 
-def  backup_changed_file(filename, md_text, ts):
-    if not os.path.exists(sync_inbox):
-        os.makedirs(sync_inbox)
-    synced_file = os.path.join(sync_inbox, filename)
-    count = 2
-    while os.path.exists(synced_file):
-        # Adding sequence number to identical filenames, preventing overwrite:
-        file_part = re.sub(r"(( - \d\d)?\.md)", r"", synced_file)
-        synced_file = file_part + " - " + str(count).zfill(2) + ".md"
-        count += 1
-    write_file(synced_file, md_text, ts)
-    print("*** Copied file to md_sync_inbox: " + filename)
-
-
 def update_bear_note(md_text, ts, ts_last_export):
     uuid = ''
     md_text = restore_tags(md_text)
@@ -268,30 +268,43 @@ def update_bear_note(md_text, ts, ts_last_export):
         md_text = re.sub(r'\<\!--\{BearID\:' + uuid + r'\}--\>', '', md_text).rstrip() + '\n'
 
         sync_conflict = check_sync_conflict(uuid, ts_last_export)
-        link_original = 'bear://x-callback-url/open-note?id=' + uuid
+        # link_original = 'bear://x-callback-url/open-note?id=' + uuid
         if sync_conflict:
-            message = '::[Sync conflict! External update: See orignal:](' + link_original + ') ' + time_stamp_ts(ts) + '::'
+            message = '::Sync conflict! External update: ' + time_stamp_ts(ts) + '::'
+            x_create = 'bear://x-callback-url/create?show_window=no' 
+            bear_x_callback(x_create, md_text, message, '')   
         else:
-            message = '::[External update: Original in trash:](' + link_original + ') ' + time_stamp_ts(ts) + '::'     
-        lines = md_text.splitlines()
-        lines.insert(1, message)
-        md_text = '\n'.join(lines)
+            # Regular external update
+            orig_title = backup_bear_note(uuid)
+            # message = '::External update: ' + time_stamp_ts(ts) + '::'   
+            x_replace = 'bear://x-callback-url/add-text?show_window=no&mode=replace&id=' + uuid
+            bear_x_callback(x_replace, md_text, '', orig_title)
+            # # Trash old original note:
+            # x_trash = 'bear://x-callback-url/trash?show_window=no&id=' + uuid
+            # subprocess.call(["open", x_trash])
+            # time.sleep(.2)
     else:
-        message = '::New external Note - ' + time_stamp_ts(ts) + '::'
+        message = '::New external Note - ' + time_stamp_ts(ts) + '::' 
+        x_create = 'bear://x-callback-url/create?show_window=no' 
+        bear_x_callback(x_create, md_text, message, '')   
+    return
+
+
+def bear_x_callback(x_command, md_text, message, orig_title):
+    if message != '':
         lines = md_text.splitlines()
         lines.insert(1, message)
         md_text = '\n'.join(lines)
-
-    # Add remote update of note to Bear in any case: (if updated, new or sync conflict)
-    x_create = 'bear://x-callback-url/create?show_window=no&text=' + urllib.parse.quote(md_text)
-    subprocess.call(["open", x_create])
+    if orig_title != '':
+        lines = md_text.splitlines()
+        title = re.sub(r'^#+ ', r'', lines[0])
+        if title != orig_title:
+            md_text = '\n'.join(lines)
+        else:
+            md_text = '\n'.join(lines[1:])        
+    x_command_text = x_command + '&text=' + urllib.parse.quote(md_text)
+    subprocess.call(["open", x_command_text])
     time.sleep(.2)
-
-    if match and not sync_conflict:
-        # Trash old original note:
-        x_trash = 'bear://x-callback-url/trash?show_window=no&id=' + uuid
-        subprocess.call(["open", x_trash])
-        time.sleep(.2)
 
 
 def check_sync_conflict(uuid, ts_last_export):
@@ -312,6 +325,40 @@ def check_sync_conflict(uuid, ts_last_export):
         conflict = mod_dt > ts_last_export
     conn.close()
     return conflict
+
+
+def backup_bear_note(uuid):
+    # Get single note from Bear sqlite db!
+    conn = sqlite3.connect(bear_db)
+    conn.row_factory = sqlite3.Row
+    query = "SELECT * FROM `ZSFNOTE` WHERE `ZUNIQUEIDENTIFIER` LIKE '" + uuid + "'"
+    c = conn.execute(query)
+    title = ''
+    for row in c:
+        title = row['ZTITLE']
+        md_text = row['ZTEXT'].rstrip()
+        modified = row['ZMODIFICATIONDATE']
+        mod_dt = dt_conv(modified)
+        link_original = 'Link updated note: [' + title + '](bear://x-callback-url/open-note?id=' + uuid +')'
+        md_text += '\n\n' + link_original + '\n'
+        filename = clean_title(title) + date_time_conv(modified) + '.md'
+        save_to_backup(filename, md_text, mod_dt)
+    conn.close()
+    return title
+ 
+
+def save_to_backup(filename, md_text, ts):
+    if not os.path.exists(sync_backup):
+        os.makedirs(sync_backup)
+    synced_file = os.path.join(sync_backup, filename)
+    count = 2
+    while os.path.exists(synced_file):
+        # Adding sequence number to identical filenames, preventing overwrite:
+        file_part = re.sub(r"(( - \d\d)?\.md)", r"", synced_file)
+        synced_file = file_part + " - " + str(count).zfill(2) + ".md"
+        count += 1
+    write_file(synced_file, md_text, ts)
+    print("*** Copied file to sync_backup: " + filename)
 
 
 def notify(message):
