@@ -13,12 +13,13 @@ This is a concept/beta version, and please feel free to improve or modify as nee
 
 * All Bear notes are exported as plain Markdown  
 	(Text only in this version, so no media or file attachments are exported.  
-	But original image links will still work and display images on return to Bear)
-* Edit your Bear notes online in browser on [OneDrive.com](https://onedrive.live.com). It has a nice editor for plain text/markdown.
-* Read and edit your Bear notes on Windows or Android with any markdown editor of choice.   
+	But original image links will still work and display images on return to Bear
+* Edit your Bear notes online in browser on [OneDrive.com](https://onedrive.live.com). It has a ok editor for plain text/markdown.
+* Or with [StackEdit](https://stackedit.io/app), an amazing online markdown editor that can sync with *Dropbox* or *Google Drive*
+* Read and edit your Bear notes on *Windows* or *Android* with any markdown editor of choice.   
 * Remote edits or new notes will be synced back into Bear again.
-
-Run it manually or add it to a cron job for automatic syncing (every 5 – 15 minutes, or whatever you prefer).
+* Run it manually or add it to a cron job for automatic syncing (every 5 – 15 minutes, or whatever you prefer).  
+([LaunchD Task Scheduler](https://itunes.apple.com/us/app/launchd-task-scheduler/id620249105?mt=12) Is easy to configure and works very well for this) 
 
 
 ### Syncs external edits back into Bear
@@ -26,10 +27,12 @@ Checks for external edits in Markdown files (previously exported from Bear):
 
 * Replacing text in original note with `bear://x-callback-url/add-text?mode=replace` command   
 (That way keeping original note ID and creation date)  
-If any changes to title, new title will be added just below original title. (`mode=replace` does not replace title)
-* Original note is backed up as .md file to BearSyncBackup folder  
-* If a sync conflict, both original and new version will be in Bear (the new one with a sync conflict message).
-* New notes are just added to Bear with `bear://x-callback-url/create` command)
+If any changes to title, new title will be added just below original title.  
+(`mode=replace` does not replace title)
+* Original note is backed up as markdown-file to BearSyncBackup folder  
+* If a sync conflict, both original and new version will be in Bear (the new one with a sync conflict message and link to original).
+* New notes created online, are just added to Bear  
+(with the `bear://x-callback-url/create` command)
 
 
 ### Markdown export to Dropbox, OneDrive, or other:
