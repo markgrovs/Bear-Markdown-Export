@@ -24,12 +24,12 @@ Run it manually or add it to a cron job for automatic syncing (every 5 – 15 mi
 ### Syncs external edits back into Bear
 Checks for external edits in Markdown files (previously exported from Bear):
 
-* Replacing text in original note with callback-url replace command   
-(Keeping original creation date)
-If Changes in title it will be added just below original title
-* New notes are added to Bear (with x-callback-url command)
-* Backing up original note as file to BearSyncBackup folder  
-  (unless a sync conflict, then both notes will be there)
+* Replacing text in original note with `bear://x-callback-url/add-text?mode=replace` command   
+(That way keeping original note ID and creation date)  
+If any changes to title, new title will be added just below original title. (`mode=replace` does not replace title)
+* Original note is backed up as .md file to BearSyncBackup folder  
+* If a sync conflict, both original and new version will be in Bear (the new one with a sync conflict message).
+* New notes are just added to Bear with `bear://x-callback-url/create` command)
 
 
 ### Markdown export to Dropbox, OneDrive, or other:
