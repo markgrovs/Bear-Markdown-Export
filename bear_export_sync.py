@@ -23,8 +23,9 @@ Then exporting Markdown from Bear sqlite db.
 '''
 
 # Change 'Dropbox' to 'Box', 'Onedrive' or whatever folder of sync service you need:
-my_sync_folder = 'Dropbox'  # Your user HOME path is added below
-
+my_sync_folder = 'Dropbox'  
+# Your user 'HOME' path and '/Bear Notes' is added below
+# So do not change anything below here!!!
 
 import sqlite3
 import datetime
@@ -37,10 +38,12 @@ import shutil
 import fnmatch
 
 
-# NOTE! "export_path" is used for sync-back to Bear, so don't change this variable name!
 HOME = os.getenv('HOME', '')
+
+# NOTE! if 'Bear Notes' is left blank, all other files in my_sync_folder will be deleted!! 
 export_path = os.path.join(HOME, my_sync_folder, 'Bear Notes')
-multi_export = [(export_path, True)] # only one folder output  
+# NOTE! "export_path" is used for sync-back to Bear, so don't change this variable name!
+multi_export = [(export_path, True)] # only one folder output here.
 
 # Sample for multi folder export:
 # export_path_aux1 = os.path.join(HOME, 'OneDrive', 'Bear Notes')
