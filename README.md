@@ -1,5 +1,5 @@
 ## Markdown export and sync of Bear notes
-_v.0.16: 2018-02-02 at 21:25 EST_
+_v.1.00: 2018-02-03 at 20:47 EST_
 
 Python script for export and roundtrip sync of Bear's notes to OneDrive, Dropbox, etc. Edit or share online in any browser: [OneDrive](http://OneDrive.com) has a nice online plain text editor and Dropbox has a nice markdown preview, and allows for comments on your shared notes.
 
@@ -14,6 +14,9 @@ This is a concept/beta version, and please feel free to improve or modify as nee
 * All Bear notes are exported as plain Markdown  
 	(Text only in this version, so no media or file attachments are exported.  
 	But original image links will still work and display images on return to Bear
+* **NEW:** Can now make nested folders from tags   
+(export to folder for first tag only, or all tags.)
+* **NEW:** Can restrict export to a list of specific tags
 * Edit your Bear notes online in browser on [OneDrive.com](https://onedrive.live.com). It has a ok editor for plain text/markdown.
 * Or with [StackEdit](https://stackedit.io/app), an amazing online markdown editor that can sync with *Dropbox* or *Google Drive*
 * Read and edit your Bear notes on *Windows* or *Android* with any markdown editor of choice.   
@@ -47,9 +50,14 @@ Exports all notes from Bear's database.sqlite as plain markdown files:
 (these ID's are striped off again when synced back into Bear)
 * Uses rsync for copying (from a temp folder), so only changed notes will be synced to Dropbox (or other sync services)
 * rsync also takes care of deleting trashed notes
-* "Hides” tags from being displayed as H1 in other markdown apps by adding a period in front of all tags:   
-.#bear .#idea .#python   
+* "Hides” tags from being displayed as H1 in other markdown apps by adding `period+space` in front of first tag on a line:   
+`. #bear #idea #python`   
 (these are striped off again when synced back into Bear)
+* Makes subfolders named with first tag in note if `make_tag_folders = True`
+* Files can now be copied to multiple tag-folders if `multi_tags = True`
+* Export can now be restricted to a list of spesific tags: `limit_export_to_tags = ['bear/github', 'writings']`  
+or leave list empty for all notes: `limit_export_to_tags = []`
+
 
 You have Bear on Mac but also want your notes on your Android phone, on Linux or Windows machine at your office. Or you want them available online in a browser from any desktop computer. Here is a solution (or call it workaround) for now, until Bear comes with an online, Windows, or Android solution ;)
 

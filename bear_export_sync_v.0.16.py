@@ -4,7 +4,7 @@
 
 '''
 # Markdown export from Bear sqlite database 
-Version 1.00, 2018-02-03 at 20:47 EST
+Version 0.16, 2018-02-02 at 21:25 EST
 github/rovest, rorves@twitter
 
 ## Syncing external updates:
@@ -23,21 +23,11 @@ Then exporting Markdown from Bear sqlite db.
   and synced by Dropbox (or other sync services)
 * "Hide" tags with period: ".#tag" from being seen as H1 in other Markdown apps.   
   (This is removed if sync-back above)
-* Makes subfolders named with first tag in note if `make_tag_folders = True`
-* Files can now be copied to multiple tag-folders if `multi_tags = True`
-* Export can now be restricted to a list of spesific tags: `limit_export_to_tags = ['bear/github', 'writings']`  
-or leave list empty for all notes: `limit_export_to_tags = []`
 '''
 
-make_tag_folders = True # Exports to folders using only first tag or all if `multi_tags = True`
-multi_tag_folders = True # Copies notes to all 'tag-paths' found in note!
-limit_export_to_tags = [] # Leave list empty for all notes! Se below for sample
-# limit_export_to_tags = ['bear/github', 'writings'] 
-
-
-my_sync_folder = 'Dropbox'  # Change 'Dropbox' to 'Box', 'Onedrive',
-# or whatever folder of sync service you need:
-# NOTE! Your user 'HOME' path and '/Bear Notes' is added below!
+# Change 'Dropbox' to 'Box', 'Onedrive' or whatever folder of sync service you need:
+my_sync_folder = 'Dropbox'  
+# Your user 'HOME' path and '/Bear Notes' is added below
 # So do not change anything below here!!!
 
 import sqlite3
@@ -50,13 +40,13 @@ import time
 import shutil
 import fnmatch
 
+
 HOME = os.getenv('HOME', '')
 
 # NOTE! if 'Bear Notes' is left blank, all other files in my_sync_folder will be deleted!! 
 export_path = os.path.join(HOME, my_sync_folder, 'Bear Notes')
 # NOTE! "export_path" is used for sync-back to Bear, so don't change this variable name!
-multi_export = [(export_path, True)] # only one folder output here. 
-# Use if you want export to severa places like: Dropbox and OneDrive, etc. See below
+multi_export = [(export_path, True)] # only one folder output here.
 
 # Sample for multi folder export:
 # export_path_aux1 = os.path.join(HOME, 'OneDrive', 'Bear Notes')
@@ -111,72 +101,12 @@ def export_markdown():
         modified = row['ZMODIFICATIONDATE']
         uuid = row['ZUNIQUEIDENTIFIER']
         filename = clean_title(title) + date_time_conv(creation_date) + '.md'
-        multifiles = []
-        if make_tag_folders:
-            multifiles = sub_path_from_tag(temp_path, filename, md_text)
-        else:
-            multifiles.append(os.path.join(temp_path, filename))
+        filepath = os.path.join(temp_path, filename)
         mod_dt = dt_conv(modified)
         md_text = hide_tags(md_text)
         md_text += '\n\n<!--{BearID:' + uuid + '}-->\n'
-        for filepath in multifiles:
-            print (filepath)
-            write_file(filepath, md_text, mod_dt)
+        write_file(filepath, md_text, mod_dt)
     conn.close()
-
-
-def sub_path_from_tag(temp_path, filename, md_text):
-    # Get first tag in note:
-    pattern1 = r'(?<!\S)\#([.\w\/\-]+)[ \n]?(?!([\/ \w]+\w[#]))'
-    pattern2 = r'(?<![\S])\#([.\w\/ ]+?)\#[ \n]'
-    if multi_tag_folders:
-        # Files copied to all tag-folders found in note
-        tags = []
-        for matches in re.findall(pattern1, md_text):
-            tag = matches[0]
-            tags.append(tag)
-            #print('tag1:', tag)
-        for matches2 in re.findall(pattern2, md_text):
-            tag2 = matches2
-            tags.append(tag2)
-        if tags.count == 0:
-            # No tags found, copy to root level only
-            return [os.path.join(temp_path, filename)]
-    else:
-        # Only folder for first tag
-        match1 =  re.search(pattern1, md_text)
-        match2 =  re.search(pattern2, md_text)
-        if match1 and match2:
-            if match1.start(1) < match2.start(1):
-                tag = match1.group(1)
-            else:
-                tag = match2.group(1)
-        elif match1:
-            tag = match1.group(1)
-        elif match2:
-            tag = match2.group(1)
-        else:
-            # No tags found, copy to root level only
-            return [os.path.join(temp_path, filename)]
-        tags = [tag]
-    paths = []
-    for tag in tags:
-        if tag == '/':
-            continue
-        if limit_export_to_tags:
-            export = False
-            for export_tag in limit_export_to_tags:
-                if tag.lower().startswith(export_tag.lower()):
-                    export = True
-                    break
-            if not export:
-                continue
-        sub_path = tag.replace('.', '_')    
-        tag_path = os.path.join(temp_path, sub_path)
-        if not os.path.exists(tag_path):
-            os.makedirs(tag_path)
-        paths.append(os.path.join(tag_path, filename))      
-    return paths
 
 
 def write_time_stamp():
@@ -189,13 +119,13 @@ def write_time_stamp():
 
 def hide_tags(md_text):
     # Hide tags from being seen as H1:
-    md_text =  re.sub(r'(\n[ \t]*)(\#[\w.]+)', r'\1. \2', md_text)
+    md_text =  re.sub(r'\#([\w]+)(?= )?', r'.#\1', md_text)
     return md_text
 
 
 def restore_tags(md_text):
     # Tags back to normal Bear tags:
-    md_text =  re.sub(r'(\n)\.([ \t]*\#[\w]+)', r'\1\2', md_text)
+    md_text =  re.sub(r'\.\#([\w]+)(?= )?', r'#\1', md_text)
     return md_text
 
 
@@ -292,13 +222,13 @@ def rsync_files_from_temp():
 
 def sync_md_updates():
     updates_found = False
-    if not os.path.exists(sync_ts_file) or not os.path.exists(export_ts_file):
+    if not os.path.exists(sync_ts_file):
         return False
     ts_last_sync = os.path.getmtime(sync_ts_file)
     ts_last_export = os.path.getmtime(export_ts_file)
     # Update synced timestamp file:
     update_sync_time_file(0)
-    file_types = ('*.md', '*.txt')
+    text_types = ('*.md', '*.txt')
     for root, dirnames, filenames in os.walk(export_path):
         '''
         This step walks down into all sub folders (if any).
@@ -307,7 +237,7 @@ def sync_md_updates():
         in case you add Markdown files to subfolders remotely. 
         Then they will also be imported into Bear and not forgotten :)
         '''
-        for pattern in file_types:
+        for pattern in text_types:
             for filename in fnmatch.filter(filenames, pattern):
                 md_file = os.path.join(root, filename)
                 ts = os.path.getmtime(md_file)
