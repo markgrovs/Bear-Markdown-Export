@@ -29,7 +29,7 @@ Then exporting Markdown from Bear sqlite db.
 or leave list empty for all notes: `limit_export_to_tags = []`
 '''
 
-make_tag_folders = True # Exports to folders using only first tag or all if `multi_tags = True`
+make_tag_folders = True # Exports to folders using first tag only if `multi_tags = False`
 multi_tag_folders = True # Copies notes to all 'tag-paths' found in note!
 limit_export_to_tags = [] # Leave list empty for all notes! Se below for sample
 # limit_export_to_tags = ['bear/github', 'writings'] 
@@ -120,7 +120,7 @@ def export_markdown():
         md_text = hide_tags(md_text)
         md_text += '\n\n<!--{BearID:' + uuid + '}-->\n'
         for filepath in multifiles:
-            print (filepath)
+            # print (filepath)
             write_file(filepath, md_text, mod_dt)
     conn.close()
 
@@ -135,7 +135,6 @@ def sub_path_from_tag(temp_path, filename, md_text):
         for matches in re.findall(pattern1, md_text):
             tag = matches[0]
             tags.append(tag)
-            #print('tag1:', tag)
         for matches2 in re.findall(pattern2, md_text):
             tag2 = matches2
             tags.append(tag2)
@@ -301,11 +300,7 @@ def sync_md_updates():
     file_types = ('*.md', '*.txt')
     for root, dirnames, filenames in os.walk(export_path):
         '''
-        This step walks down into all sub folders (if any).
-        It's not really neccessary here since export is only to one flat folder.
-        Nevertheless, it might still be good to leave it like this, 
-        in case you add Markdown files to subfolders remotely. 
-        Then they will also be imported into Bear and not forgotten :)
+        This step walks down into all sub folders, if any.
         '''
         for pattern in file_types:
             for filename in fnmatch.filter(filenames, pattern):
