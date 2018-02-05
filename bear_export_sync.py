@@ -4,7 +4,7 @@
 
 '''
 # Markdown export from Bear sqlite database 
-Version 1.00, 2018-02-03 at 20:47 EST
+Version 1.2.1, 2018-02-05 at 08:33 EST
 github/rovest, rorves@twitter
 
 ## Syncing external updates:
@@ -31,9 +31,15 @@ or leave list empty for all notes: `limit_export_to_tags = []`
 
 make_tag_folders = True # Exports to folders using first tag only if `multi_tags = False`
 multi_tag_folders = True # Copies notes to all 'tag-paths' found in note!
-limit_export_to_tags = [] # Leave list empty for all notes! Se below for sample
-# limit_export_to_tags = ['bear/github', 'writings'] 
 
+# The following two lists are more or less mutually exclusive, so use only one of them.
+# (You can use both if you have some nested tags where that makes sense)
+# They also only work if `make_tag_folders = True`
+only_export_these_tags = [] # Leave this list empty for all notes! See below for sample
+# limit_export_to_tags = ['bear/github', 'writings'] 
+no_export_tags = [] # If a tag in note matches one in this list , it will not be exported.
+# no_export_tags = ['private', '.inbox', 'love letters', 'banking'] 
+export_images = True
 
 my_sync_folder = 'Dropbox'  # Change 'Dropbox' to 'Box', 'Onedrive',
 # or whatever folder of sync service you need:
@@ -70,6 +76,11 @@ sync_backup = os.path.join(HOME, my_sync_folder, 'BearSyncBackup') # Backup of o
 temp_path = os.path.join(HOME, 'Temp', 'BearExportTemp')  # NOTE! Do not change the "BearExportTemp" folder name!!!
 bear_db = os.path.join(HOME, 'Library/Containers/net.shinyfrog.bear/Data/Documents/Application Data/database.sqlite')
 
+# Paths used in image exports:
+bear_image_path = os.path.join(HOME,
+    'Library/Containers/net.shinyfrog.bear/Data/Documents/Application Data/Local Files/Note Images')
+assets_path = os.path.join(HOME, export_path, 'BearImages')
+
 sync_ts = ".sync-time.log"
 export_ts = ".export-time.log"
 
@@ -83,10 +94,14 @@ def main():
     sync_md_updates()
     if check_db_modified():
         delete_old_temp_files()
-        export_markdown()
+        note_count = export_markdown()
         write_time_stamp()
         rsync_files_from_temp()
+        if export_images:
+            copy_bear_images()
         # notify('Export completed')
+        print(note_count, 'notes exported to:')
+        print(export_path)
     else:
         print('No notes needed export')
 
@@ -104,6 +119,7 @@ def export_markdown():
     conn.row_factory = sqlite3.Row
     query = "SELECT * FROM `ZSFNOTE` WHERE `ZTRASHED` LIKE '0'"
     c = conn.execute(query)
+    note_count = 0
     for row in c:
         title = row['ZTITLE']
         md_text = row['ZTEXT'].rstrip()
@@ -111,18 +127,25 @@ def export_markdown():
         modified = row['ZMODIFICATIONDATE']
         uuid = row['ZUNIQUEIDENTIFIER']
         filename = clean_title(title) + date_time_conv(creation_date) + '.md'
-        multifiles = []
+        file_list = []
         if make_tag_folders:
-            multifiles = sub_path_from_tag(temp_path, filename, md_text)
+            file_list = sub_path_from_tag(temp_path, filename, md_text)
         else:
-            multifiles.append(os.path.join(temp_path, filename))
-        mod_dt = dt_conv(modified)
-        md_text = hide_tags(md_text)
-        md_text += '\n\n<!--{BearID:' + uuid + '}-->\n'
-        for filepath in multifiles:
-            # print (filepath)
-            write_file(filepath, md_text, mod_dt)
+            file_list.append(os.path.join(temp_path, filename))
+        if file_list:
+            mod_dt = dt_conv(modified)
+            md_text = hide_tags(md_text)
+            md_text += '\n\n<!-- {BearID:' + uuid + '} -->\n'
+            for filepath in file_list:
+                note_count += 1
+                # print(filepath)
+                if export_images:
+                    md_proc_text = process_image_links(md_text, filepath)
+                    write_file(filepath, md_proc_text, mod_dt)
+                else:
+                    write_file(filepath, md_text, mod_dt)
     conn.close()
+    return note_count
 
 
 def sub_path_from_tag(temp_path, filename, md_text):
@@ -162,20 +185,49 @@ def sub_path_from_tag(temp_path, filename, md_text):
     for tag in tags:
         if tag == '/':
             continue
-        if limit_export_to_tags:
+        if only_export_these_tags:
             export = False
-            for export_tag in limit_export_to_tags:
+            for export_tag in only_export_these_tags:
                 if tag.lower().startswith(export_tag.lower()):
                     export = True
                     break
             if not export:
                 continue
+        for no_tag in no_export_tags:
+            if tag.lower().startswith(no_tag.lower()):
+                return []
         sub_path = tag.replace('.', '_')    
         tag_path = os.path.join(temp_path, sub_path)
         if not os.path.exists(tag_path):
             os.makedirs(tag_path)
         paths.append(os.path.join(tag_path, filename))      
     return paths
+
+
+def process_image_links(md_text, filepath):
+    '''
+    Bear image links converted to MD links
+    '''
+    root = filepath.replace(temp_path, '')
+    level = len(root.split('/')) - 3
+    parent = '../' * level
+    md_text = re.sub(r'\[image:(.+?)\]', r'![](' + parent + r'../BearImages/\1)', md_text)
+    return md_text
+
+
+def restore_image_links(md_text):
+    '''
+    MD image links restored back to Bear links
+    '''
+    # md_text = re.sub(r'\[image:(.+?)\]', r'![](../assets/\1)', md_text)
+    md_text = re.sub(r'!\[\]\((\.\./)*BearImages/(.+?)\)', r'[image:\2]', md_text)
+    return md_text
+
+
+def copy_bear_images():
+    # Image files copied to a common image repository
+    subprocess.call(['rsync', '-r', '-t', '--delete', 
+                    bear_image_path + "/", assets_path])
 
 
 def write_time_stamp():
@@ -188,7 +240,7 @@ def write_time_stamp():
 
 def hide_tags(md_text):
     # Hide tags from being seen as H1:
-    md_text =  re.sub(r'(\n[ \t]*)(\#[\w.]+)', r'\1. \2', md_text)
+    md_text =  re.sub(r'(\n)([ \t]*)(\#[\w.]+)', r'\1. \2\3', md_text)
     return md_text
 
 
@@ -280,13 +332,11 @@ def rsync_files_from_temp():
         if not os.path.exists(dest_path):
             os.makedirs(dest_path)
         if delete:
-            subprocess.call(['rsync', '-r', '-t', '--delete',
+            subprocess.call(['rsync', '-r', '-t', '--delete', '--exclude', 'BearImages/',
                             temp_path + "/", dest_path])
         else:
             subprocess.call(['rsync', '-r', '-t',
                             temp_path + "/", dest_path])
-        print('Export completed to:')
-        print(dest_path)
 
 
 def sync_md_updates():
@@ -331,12 +381,14 @@ def update_sync_time_file(ts):
 def update_bear_note(md_text, ts, ts_last_export):
     uuid = ''
     md_text = restore_tags(md_text)
+    if export_images:
+        md_text = restore_image_links(md_text)    
     match = re.search(r'\{BearID:(.+?)\}', md_text)
     sync_conflict = False
     if match:
         uuid = match.group(1)
         # Remove old BearID: from new note
-        md_text = re.sub(r'\<\!--\{BearID\:' + uuid + r'\}--\>', '', md_text).rstrip() + '\n'
+        md_text = re.sub(r'\<\!-- ?\{BearID\:' + uuid + r'\} ?--\>', '', md_text).rstrip() + '\n'
 
         sync_conflict = check_sync_conflict(uuid, ts_last_export)
         if sync_conflict:
@@ -411,7 +463,7 @@ def backup_bear_note(uuid):
         md_text = row['ZTEXT'].rstrip()
         modified = row['ZMODIFICATIONDATE']
         mod_dt = dt_conv(modified)
-        link_original = 'Link updated note: [' + title + '](bear://x-callback-url/open-note?id=' + uuid +')'
+        link_original = 'Link to updated note: [' + title + '](bear://x-callback-url/open-note?id=' + uuid +')'
         md_text += '\n\n' + link_original + '\n'
         filename = clean_title(title) + date_time_conv(modified) + '.md'
         save_to_backup(filename, md_text, mod_dt)
