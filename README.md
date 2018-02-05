@@ -1,5 +1,5 @@
 ## Markdown export and sync of Bear notes
-_v.1.00: 2018-02-03 at 20:47 EST_
+_v.1.3.0: 2018-02-05 at 18:05 EST_
 
 Python script for export and roundtrip sync of Bear's notes to OneDrive, Dropbox, etc. Edit or share online in any browser: [OneDrive](http://OneDrive.com) has a nice online plain text editor and Dropbox has a nice markdown preview, and allows for comments on your shared notes.
 
@@ -17,11 +17,13 @@ This is a concept/beta version, and please feel free to improve or modify as nee
 * **NEW:** Can now make nested folders from tags   
 (export to folder for first tag only, or all tags.)
 * **NEW:** Can restrict export to a list of specific tags
-* Edit your Bear notes online in browser on [OneDrive.com](https://onedrive.live.com). It has a ok editor for plain text/markdown.
-* Or with [StackEdit](https://stackedit.io/app), an amazing online markdown editor that can sync with *Dropbox* or *Google Drive*
-* Read and edit your Bear notes on *Windows* or *Android* with any markdown editor of choice.   
-* Remote edits or new notes will be synced back into Bear again.
-* Run it manually or add it to a cron job for automatic syncing (every 5 – 15 minutes, or whatever you prefer).  
+* **NEW:** export as `.md` with links to common image repository or as `.textbundles` with images included. 
+
+Edit your Bear notes online in browser on [OneDrive.com](https://onedrive.live.com). It has a ok editor for plain text/markdown. Or with [StackEdit](https://stackedit.io/app), an amazing online markdown editor that can sync with *Dropbox* or *Google Drive*
+
+Read and edit your Bear notes on *Windows* or *Android* with any markdown editor of choice. Remote edits or new notes will be synced back into Bear again.
+
+Run it manually or add it to a cron job for automatic syncing (every 5 – 15 minutes, or whatever you prefer).  
 ([LaunchD Task Scheduler](https://itunes.apple.com/us/app/launchd-task-scheduler/id620249105?mt=12) Is easy to configure and works very well for this) 
 
 
@@ -57,6 +59,9 @@ Exports all notes from Bear's database.sqlite as plain markdown files:
 * Files can now be copied to multiple tag-folders if `multi_tags = True`
 * Export can now be restricted to a list of spesific tags: `limit_export_to_tags = ['bear/github', 'writings']`  
 or leave list empty for all notes: `limit_export_to_tags = []`
+* Can export and link to images in common image repository
+* Or export as textbundles with images included 
+
 
 
 You have Bear on Mac but also want your notes on your Android phone, on Linux or Windows machine at your office. Or you want them available online in a browser from any desktop computer. Here is a solution (or call it workaround) for now, until Bear comes with an online, Windows, or Android solution ;)
