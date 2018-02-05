@@ -4,7 +4,7 @@
 
 '''
 # Markdown export from Bear sqlite database 
-Version 1.2.1, 2018-02-05 at 08:33 EST
+Version 1.3.0, 2018-02-05 at 18:05 EST
 github/rovest, rorves@twitter
 
 ## Syncing external updates:
@@ -16,6 +16,7 @@ First checking for Changes in Markdown files (previously exported from Bear)
 * New notes are added to Bear (with x-callback-url command)
 * Backing up original note as file to BearSyncBackup folder  
   (unless a sync conflict, then both notes will be there)
+* 
 
 Then exporting Markdown from Bear sqlite db.
 * check_if_modified() on database.sqlite to see if export is needed
@@ -27,28 +28,31 @@ Then exporting Markdown from Bear sqlite db.
 * Files can now be copied to multiple tag-folders if `multi_tags = True`
 * Export can now be restricted to a list of spesific tags: `limit_export_to_tags = ['bear/github', 'writings']`  
 or leave list empty for all notes: `limit_export_to_tags = []`
+* Can export and link to images in common image repository
+* Or export as textbundles with images included 
 '''
 
-make_tag_folders = True # Exports to folders using first tag only if `multi_tags = False`
+make_tag_folders = True # Exports to folders using first tag only, if `multi_tag_folders = False`
 multi_tag_folders = True # Copies notes to all 'tag-paths' found in note!
 
 # The following two lists are more or less mutually exclusive, so use only one of them.
 # (You can use both if you have some nested tags where that makes sense)
-# They also only work if `make_tag_folders = True`
+# Also, they only work if `make_tag_folders = True`.
 only_export_these_tags = [] # Leave this list empty for all notes! See below for sample
-# limit_export_to_tags = ['bear/github', 'writings'] 
-no_export_tags = [] # If a tag in note matches one in this list , it will not be exported.
+# only_export_these_tags = ['bear/github', 'writings'] 
+no_export_tags = [] # If a tag in note matches one in this list, it will not be exported.
 # no_export_tags = ['private', '.inbox', 'love letters', 'banking'] 
 
-# Only one of the folowing to True 
-# if `export_as_textbundles = True`, `export_images` is ignored
-export_images = True  # Exports as md but link images to image repository exported to: `assets_path` 
+# Set only one of the folowing to True 
+    # (if `export_as_textbundles = True`, `export_image_repository` is ignored)
+export_image_repository = False  # Exports as md but link images to image repository exported to: `assets_path` 
 export_as_textbundles = True  # Exports as Textbundles with images included
 
 my_sync_folder = 'Dropbox'  # Change 'Dropbox' to 'Box', 'Onedrive',
-# or whatever folder of sync service you need:
+    # or whatever folder of sync service you need.
+
 # NOTE! Your user 'HOME' path and '/Bear Notes' is added below!
-# So do not change anything below here!!!
+# NOTE! So do not change anything below here!!!
 
 import sqlite3
 import datetime
@@ -101,7 +105,7 @@ def main():
         note_count = export_markdown()
         write_time_stamp()
         rsync_files_from_temp()
-        if export_images and not export_as_textbundles:
+        if export_image_repository and not export_as_textbundles:
             copy_bear_images()
         # notify('Export completed')
         print(note_count, 'notes exported to:')
@@ -145,7 +149,7 @@ def export_markdown():
                 # print(filepath)
                 if export_as_textbundles:
                     make_text_bundle(md_text, filepath, mod_dt)
-                elif export_images:
+                elif export_image_repository:
                     md_proc_text = process_image_links(md_text, filepath)
                     write_file(filepath + '.md', md_proc_text, mod_dt)
                 else:
@@ -257,7 +261,7 @@ def restore_image_links(md_text):
     '''
     if export_as_textbundles:
         md_text = re.sub(r'!\[\]\(assets/(.+?)_(.+?)\)', r'[image:\1/\2]', md_text)
-    elif export_images :
+    elif export_image_repository :
         # md_text = re.sub(r'\[image:(.+?)\]', r'![](../assets/\1)', md_text)
         md_text = re.sub(r'!\[\]\((\.\./)*BearImages/(.+?)\)', r'[image:\2]', md_text)
     return md_text
@@ -278,14 +282,14 @@ def write_time_stamp():
 
 
 def hide_tags(md_text):
-    # Hide tags from being seen as H1:
-    md_text =  re.sub(r'(\n)([ \t]*)(\#[\w.]+)', r'\1. \2\3', md_text)
+    # Hide tags from being seen as H1, by placing `period+space` at start of line:
+    md_text =  re.sub(r'(\n)[ \t]*(\#[\w.]+)', r'\1. \2', md_text)
     return md_text
 
 
 def restore_tags(md_text):
-    # Tags back to normal Bear tags:
-    md_text =  re.sub(r'(\n)\.([ \t]*\#[\w]+)', r'\1\2', md_text)
+    # Tags back to normal Bear tags, stripping the `period+space` at start of line:
+    md_text =  re.sub(r'(\n)\.[ \t]*(\#[\w]+)', r'\1\2', md_text)
     return md_text
 
 
@@ -333,7 +337,7 @@ def date_time_conv(dtnum):
     newnum = dt_conv(dtnum) 
     dtdate = datetime.datetime.fromtimestamp(newnum)
     #print(newnum, dtdate)
-    return dtdate.strftime(' - %Y-%m-%d_%H%M') 
+    return dtdate.strftime(' - %Y-%m-%d_%H%M')
 
 
 def time_stamp_ts(ts):
@@ -374,6 +378,7 @@ def rsync_files_from_temp():
             subprocess.call(['rsync', '-r', '-t', '--delete',
                              '--exclude', 'BearImages/',
                              '--exclude', '.Ulysses-Group.plist',
+                             '--exclude', '*.Ulysses_Public_Filter',
                              temp_path + "/", dest_path])
         else:
             subprocess.call(['rsync', '-r', '-t',
@@ -400,9 +405,13 @@ def sync_md_updates():
                 if ts > ts_last_sync:
                     updates_found = True
                     md_text = read_file(md_file)
-                    # backup_changed_file(filename, md_text, ts)
-                    update_bear_note(md_text, ts, ts_last_export)
-                    print("*** Bear Note Updated")
+                    backup_ext_note(md_file)
+                    if check_if_image_added(md_text, md_file):
+                        textbundle_to_bear(md_text, md_file, ts)
+                        print("*** Textbundle imported to Bear")
+                    else:
+                        update_bear_note(md_text, ts, ts_last_export)
+                        print("*** Bear Note Updated")
     if updates_found:
         # Give Bear time to process updates:
         time.sleep(3)
@@ -411,6 +420,50 @@ def sync_md_updates():
         # The logic is not 100% fool proof, but should be close to 99.99%
         sync_md_updates() # Recursive call
     return updates_found
+
+
+def check_if_image_added(md_text, md_file):
+    if not '.textbundle/' in md_file:
+        return False
+    matches = re.findall(r'!\[\]\(assets/(.+?)\)', md_text)
+    for image_match in matches:
+        'F89CDA3D-3FCC-4E92-88C1-CC4AF46FA733-10097-00002BBE9F7FF804_IMG_2280.JPG'
+        if not re.match(r'\w{8}-\w{4}-\w{4}-\w{4}-\w{12}-\w{5}-\w{16}_', image_match):
+            return True
+    return False        
+
+
+def textbundle_to_bear(md_text, md_file, mod_dt):
+    md_text = restore_tags(md_text)
+    match = re.search(r'\{BearID:(.+?)\}', md_text)
+    if match:
+        uuid = match.group(1)
+        # Remove old BearID: from new note
+        md_text = re.sub(r'\<\!-- ?\{BearID\:' + uuid + r'\} ?--\>', '', md_text).rstrip() + '\n'
+        md_text = insert_link_top_note(md_text, 'Images added! Link to original note:', uuid)
+    write_file(md_file, md_text, mod_dt)
+    bundle = os.path.split(md_file)[0]
+    os.utime(bundle, (-1, mod_dt))
+    subprocess.call(['open', '-a', '/applications/bear.app', bundle])
+    time.sleep(0.5)
+
+
+def backup_ext_note(md_file):
+    if '.textbundle' in md_file:
+        bundle_path = os.path.split(md_file)[0]
+        bundle_name = os.path.split(bundle_path)[1]
+        target = os.path.join(sync_backup, bundle_name)
+        bundle_raw = os.path.splitext(target)[0]
+
+        count = 2
+        while os.path.exists(target):
+            # Adding sequence number to identical filenames, preventing overwrite:
+            bundle_raw = re.sub(r"(( - \d\d)?\.textbundle)", r"", target)
+            target = bundle_raw + " - " + str(count).zfill(2) + ".textbundle"
+            count += 1
+        shutil.copytree(bundle_path, target)
+    else:
+        shutil.copy2(md_file, sync_backup + '/')
 
 
 def update_sync_time_file(ts):
@@ -439,7 +492,7 @@ def update_bear_note(md_text, ts, ts_last_export):
             bear_x_callback(x_create, md_text, message, '')   
         else:
             # Regular external update
-            orig_title = backup_bear_note(uuid)
+            orig_title = backup_bear_note(uuid, ts)
             # message = '::External update: ' + time_stamp_ts(ts) + '::'   
             x_replace = 'bear://x-callback-url/add-text?show_window=no&mode=replace&id=' + uuid
             bear_x_callback(x_replace, md_text, '', orig_title)
@@ -491,25 +544,33 @@ def check_sync_conflict(uuid, ts_last_export):
     return conflict
 
 
-def backup_bear_note(uuid):
+def backup_bear_note(uuid, mod_dt):
     # Get single note from Bear sqlite db!
     conn = sqlite3.connect(bear_db)
     conn.row_factory = sqlite3.Row
     query = "SELECT * FROM `ZSFNOTE` WHERE `ZUNIQUEIDENTIFIER` LIKE '" + uuid + "'"
     c = conn.execute(query)
     title = ''
-    for row in c:
+    for row in c:  # Will only get one row if uuid is found!
         title = row['ZTITLE']
         md_text = row['ZTEXT'].rstrip()
-        modified = row['ZMODIFICATIONDATE']
-        mod_dt = dt_conv(modified)
-        link_original = 'Link to updated note: [' + title + '](bear://x-callback-url/open-note?id=' + uuid +')'
-        md_text += '\n\n' + link_original + '\n'
-        filename = clean_title(title) + date_time_conv(modified) + '.md'
+        # modified = row['ZMODIFICATIONDATE']
+        # mod_dt = dt_conv(modified)
+        md_text = insert_link_top_note(md_text, 'Link to updated note: ', uuid)
+        dtdate = datetime.datetime.fromtimestamp(mod_dt)
+        filename = clean_title(title) + dtdate.strftime(' - %Y-%m-%d_%H%M') + '.md'
         save_to_backup(filename, md_text, mod_dt)
     conn.close()
     return title
- 
+
+
+def insert_link_top_note(md_text, message, uuid):
+    lines = md_text.split('\n')
+    title = re.sub(r'^#{1,6} ', r'', lines[0])
+    link = '::' + message + '[' + title + '](bear://x-callback-url/open-note?id=' + uuid + ')::'        
+    lines.insert(1, link) 
+    return '\n'.join(lines)
+
 
 def save_to_backup(filename, md_text, ts):
     if not os.path.exists(sync_backup):
