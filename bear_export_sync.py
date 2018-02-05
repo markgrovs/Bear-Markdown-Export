@@ -39,7 +39,11 @@ only_export_these_tags = [] # Leave this list empty for all notes! See below for
 # limit_export_to_tags = ['bear/github', 'writings'] 
 no_export_tags = [] # If a tag in note matches one in this list , it will not be exported.
 # no_export_tags = ['private', '.inbox', 'love letters', 'banking'] 
-export_images = True
+
+# Only one of the folowing to True 
+# if `export_as_textbundles = True`, `export_images` is ignored
+export_images = True  # Exports as md but link images to image repository exported to: `assets_path` 
+export_as_textbundles = True  # Exports as Textbundles with images included
 
 my_sync_folder = 'Dropbox'  # Change 'Dropbox' to 'Box', 'Onedrive',
 # or whatever folder of sync service you need:
@@ -97,7 +101,7 @@ def main():
         note_count = export_markdown()
         write_time_stamp()
         rsync_files_from_temp()
-        if export_images:
+        if export_images and not export_as_textbundles:
             copy_bear_images()
         # notify('Export completed')
         print(note_count, 'notes exported to:')
@@ -126,7 +130,7 @@ def export_markdown():
         creation_date = row['ZCREATIONDATE']
         modified = row['ZMODIFICATIONDATE']
         uuid = row['ZUNIQUEIDENTIFIER']
-        filename = clean_title(title) + date_time_conv(creation_date) + '.md'
+        filename = clean_title(title) + date_time_conv(creation_date)
         file_list = []
         if make_tag_folders:
             file_list = sub_path_from_tag(temp_path, filename, md_text)
@@ -139,13 +143,45 @@ def export_markdown():
             for filepath in file_list:
                 note_count += 1
                 # print(filepath)
-                if export_images:
+                if export_as_textbundles:
+                    make_text_bundle(md_text, filepath, mod_dt)
+                elif export_images:
                     md_proc_text = process_image_links(md_text, filepath)
-                    write_file(filepath, md_proc_text, mod_dt)
+                    write_file(filepath + '.md', md_proc_text, mod_dt)
                 else:
-                    write_file(filepath, md_text, mod_dt)
+                    write_file(filepath + '.md', md_text, mod_dt)
     conn.close()
     return note_count
+
+
+def make_text_bundle(md_text, filepath, mod_dt):
+    '''
+    Exports as Textbundles with images included 
+    '''
+    filepath += '.textbundle'
+    assets = os.path.join(filepath, 'assets')    
+    if not os.path.exists(filepath):
+        os.makedirs(filepath)
+        os.makedirs(assets)
+        
+    info = '''{
+    "transient" : true,
+    "type" : "net.daringfireball.markdown",
+    "creatorIdentifier" : "net.shinyfrog.bear",
+    "version" : 2
+    }'''
+    matches = re.findall(r'\[image:(.+?)\]', md_text)
+    for match in matches:
+        image_name = match
+        new_name = image_name.replace('/', '_')
+        source = os.path.join(bear_image_path, image_name)
+        target = os.path.join(bear_image_path, assets, new_name)
+        shutil.copy2(source, target)
+
+    md_text = re.sub(r'\[image:(.+?)/(.+?)\]', r'![](assets/\1_\2)', md_text)
+    write_file(filepath + '/text.md', md_text, mod_dt)
+    write_file(filepath + '/info.json', info, mod_dt)
+    os.utime(filepath, (-1, mod_dt))
 
 
 def sub_path_from_tag(temp_path, filename, md_text):
@@ -209,9 +245,9 @@ def process_image_links(md_text, filepath):
     Bear image links converted to MD links
     '''
     root = filepath.replace(temp_path, '')
-    level = len(root.split('/')) - 3
+    level = len(root.split('/')) - 2
     parent = '../' * level
-    md_text = re.sub(r'\[image:(.+?)\]', r'![](' + parent + r'../BearImages/\1)', md_text)
+    md_text = re.sub(r'\[image:(.+?)\]', r'![](' + parent + r'BearImages/\1)', md_text)
     return md_text
 
 
@@ -219,8 +255,11 @@ def restore_image_links(md_text):
     '''
     MD image links restored back to Bear links
     '''
-    # md_text = re.sub(r'\[image:(.+?)\]', r'![](../assets/\1)', md_text)
-    md_text = re.sub(r'!\[\]\((\.\./)*BearImages/(.+?)\)', r'[image:\2]', md_text)
+    if export_as_textbundles:
+        md_text = re.sub(r'!\[\]\(assets/(.+?)_(.+?)\)', r'[image:\1/\2]', md_text)
+    elif export_images :
+        # md_text = re.sub(r'\[image:(.+?)\]', r'![](../assets/\1)', md_text)
+        md_text = re.sub(r'!\[\]\((\.\./)*BearImages/(.+?)\)', r'[image:\2]', md_text)
     return md_text
 
 
@@ -332,8 +371,10 @@ def rsync_files_from_temp():
         if not os.path.exists(dest_path):
             os.makedirs(dest_path)
         if delete:
-            subprocess.call(['rsync', '-r', '-t', '--delete', '--exclude', 'BearImages/',
-                            temp_path + "/", dest_path])
+            subprocess.call(['rsync', '-r', '-t', '--delete',
+                             '--exclude', 'BearImages/',
+                             '--exclude', '.Ulysses-Group.plist',
+                             temp_path + "/", dest_path])
         else:
             subprocess.call(['rsync', '-r', '-t',
                             temp_path + "/", dest_path])
@@ -381,8 +422,7 @@ def update_sync_time_file(ts):
 def update_bear_note(md_text, ts, ts_last_export):
     uuid = ''
     md_text = restore_tags(md_text)
-    if export_images:
-        md_text = restore_image_links(md_text)    
+    md_text = restore_image_links(md_text)    
     match = re.search(r'\{BearID:(.+?)\}', md_text)
     sync_conflict = False
     if match:
