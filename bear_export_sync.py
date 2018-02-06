@@ -21,9 +21,9 @@ Then exporting Markdown from Bear sqlite db.
 * check_if_modified() on database.sqlite to see if export is needed
 * Uses rsync for copying, so only markdown files of changed sheets will be updated  
   and synced by Dropbox (or other sync services)
-* "Hide" tags with period: ".#tag" from being seen as H1 in other Markdown apps.   
+* "Hides" tags with `period+space` on beginning of line: `. #tag` not appear as H1 in other apps.   
   (This is removed if sync-back above)
-* Or hide tags in HTML comment blocks like: `<!-- #mytag -->` if `hide_tags_in_comment_block = True`
+* Or instead hide tags in HTML comment blocks like: `<!-- #mytag -->` if `hide_tags_in_comment_block = True`
 * Makes subfolders named with first tag in note if `make_tag_folders = True`
 * Files can now be copied to multiple tag-folders if `multi_tags = True`
 * Export can now be restricted to a list of spesific tags: `limit_export_to_tags = ['bear/github', 'writings']`  
