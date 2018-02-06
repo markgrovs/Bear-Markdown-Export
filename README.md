@@ -38,7 +38,8 @@ If any changes to title, new title will be added just below original title.
 * If a sync conflict, both original and new version will be in Bear (the new one with a sync conflict message and link to original).
 * New notes created online, are just added to Bear  
 (with the `bear://x-callback-url/create` command)
-* If textbundles get new images from external apps, they will be opened and imported to new notes in Bear, with message and link to original note.
+* If a textbundle gets new images from an external app, it will be opened and imported as a new note in Bear, with message and link to original note.  
+(The `subprocess.call(['open', '-a', '/applications/bear.app', bundle])` command is used for this)
 
 
 ### Markdown export to Dropbox, OneDrive, or other:
