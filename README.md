@@ -4,7 +4,8 @@ _Version 1.3.2, 2018-02-06 at 11:55 EST_
 Python script for export and roundtrip sync of Bear's notes to OneDrive, Dropbox, etc. and edit online with [StackEdit](https://stackedit.io/app), or use a markdown editor like *Typora* on Windows or a suitable app on Android. Remote edits and new notes get synced back into Bear with this script.
 
 Set up seamless syncing with Ulysses’ external folders on Mac, with images included!  
-Write and add photos in Bear, then reorder, glue, and publish, export, or print with styles in Ulysses – bears and butterflies are best friends ;)  
+Write and add photos in Bear, then reorder, glue, and publish, export, or print with styles in Ulysses—  
+bears and butterflies are best friends ;)  
 (PS. The manual order you set for notes in Ulysses' external folder, is maintained during syncs, unless title is changed.) 
 
 BEAR IN MIND! This is a free to use version, and please improve or modify as needed. But do be careful! both `rsync` and `shutil.rmtree` used here, are powerful commands that can wipe clean a whole folder tree or even your complete HD if paths are set incorrectly! Also, be safe, take a fresh backup of both Bear and your Mac before first run.
