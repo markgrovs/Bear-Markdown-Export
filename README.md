@@ -27,20 +27,21 @@ Run script manually or add it to a cron job for automatic syncing (every 5 – 1
 
 
 ### Syncs external edits back into Bear
-Checks for external edits in Markdown files (previously exported from Bear):
+Script first checks for external edits in Markdown files or textbundles (previously exported from Bear as described below):
 
-* Replacing text in original note with `bear://x-callback-url/add-text?mode=replace` command   
+* It replaces text in original note with `bear://x-callback-url/add-text?mode=replace` command   
 (That way keeping original note ID and creation date)  
 If any changes to title, new title will be added just below original title.  
 (`mode=replace` does not replace title)
-* Original note is backed up as markdown-file to BearSyncBackup folder  
+* Original note in `sqlite` database and external edit are both backed up as markdown-files to BearSyncBackup folder before import to bear.
 * If a sync conflict, both original and new version will be in Bear (the new one with a sync conflict message and link to original).
 * New notes created online, are just added to Bear  
 (with the `bear://x-callback-url/create` command)
+* If textbundles get new images from external apps, they will be opened and imported to new notes in Bear, with message and link to original note.
 
 
 ### Markdown export to Dropbox, OneDrive, or other:
-Exports all notes from Bear's database.sqlite as plain markdown files:
+Then exports all notes from Bear's database.sqlite as plain markdown files:
 
 * Checks modified timestamp on database.sqlite, so exports only when needed.
 * Sets Bear note's modification date on exported markdown files.
