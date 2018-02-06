@@ -4,7 +4,7 @@
 
 '''
 # Markdown export from Bear sqlite database 
-Version 1.3.1, 2018-02-05 at 20:22 EST
+Version 1.3.2, 2018-02-06 at 11:55 EST
 github/rovest, rorves@twitter
 
 ## Syncing external updates:
@@ -393,7 +393,7 @@ def sync_md_updates():
     ts_last_export = os.path.getmtime(export_ts_file)
     # Update synced timestamp file:
     update_sync_time_file(0)
-    file_types = ('*.md', '*.txt')
+    file_types = ('*.md', '*.txt', '*.markdown')
     for root, dirnames, filenames in os.walk(export_path):
         '''
         This step walks down into all sub folders, if any.
