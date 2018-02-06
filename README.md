@@ -20,7 +20,7 @@ Edit your Bear notes online in browser on [OneDrive.com](https://onedrive.live.c
 
 Read and edit your Bear notes on *Windows* or *Android* with any markdown editor of choice. Remote edits or new notes will be synced back into Bear again. *Typora* works great on Windows, and displays images of text bundles as well.
 
-Set up seamless syncing with Ulysses’ external folders on Mac.  
+Set up seamless syncing with Ulysses’ external folders on Mac, with images included!  
 Just remember to edit that folder settings to `.textbundle` and `Inline Links`!
 
 Run script manually or add it to a cron job for automatic syncing (every 5 – 15 minutes, or whatever you prefer).  
