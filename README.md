@@ -3,7 +3,7 @@ _Version 1.3.1, 2018-02-05 at 20:22 EST_
 
 Python script for export and roundtrip sync of Bear's notes to OneDrive, Dropbox, etc. and edit online with [StackEdit](https://stackedit.io/app), or use a markdown editor like *Typora* on Windows or a suitable app on Android. Remote edits and new notes get synced back into Bear with this script.
 
-This is a concept/beta version, and please feel free to improve or modify as needed. But please be careful! both `rsync` and `shutil.rmtree` are powerful commands that can wipe clean a whole folder tree or even your complete HD if used incorrectly!
+NOTE! This is a free to use version, and please improve or modify as needed. But do be careful! both `rsync` and `shutil.rmtree` used here, are powerful commands that can wipe clean a whole folder tree or even your complete HD if paths are set incorrectly! Also, be safe, take a fresh backup of both Bear and your Mac before first run.
 
 *See also: [Bear Power Pack](https://github.com/rovest/Bear-Power-Pack/blob/master/README.md)*
 
