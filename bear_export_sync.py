@@ -4,7 +4,7 @@
 
 '''
 # Markdown export from Bear sqlite database 
-Version 1.3.2, 2018-02-06 at 11:55 EST
+Version 1.3.3, 2018-02-06 at 13:36 EST
 github/rovest, rorves@twitter
 
 ## Syncing external updates:
@@ -189,7 +189,7 @@ def make_text_bundle(md_text, filepath, mod_dt):
 
 
 def sub_path_from_tag(temp_path, filename, md_text):
-    # Get first tag in note:
+    # Get tags in note:
     pattern1 = r'(?<!\S)\#([.\w\/\-]+)[ \n]?(?!([\/ \w]+\w[#]))'
     pattern2 = r'(?<![\S])\#([.\w\/ ]+?)\#[ \n]'
     if multi_tag_folders:
@@ -201,7 +201,7 @@ def sub_path_from_tag(temp_path, filename, md_text):
         for matches2 in re.findall(pattern2, md_text):
             tag2 = matches2
             tags.append(tag2)
-        if tags.count == 0:
+        if len(tags) == 0:
             # No tags found, copy to root level only
             return [os.path.join(temp_path, filename)]
     else:
