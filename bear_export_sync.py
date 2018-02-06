@@ -4,7 +4,7 @@
 
 '''
 # Markdown export from Bear sqlite database 
-Version 1.3.0, 2018-02-05 at 18:05 EST
+Version 1.3.1, 2018-02-05 at 20:22 EST
 github/rovest, rorves@twitter
 
 ## Syncing external updates:
@@ -377,7 +377,7 @@ def rsync_files_from_temp():
         if delete:
             subprocess.call(['rsync', '-r', '-t', '--delete',
                              '--exclude', 'BearImages/',
-                             '--exclude', '.Ulysses-Group.plist',
+                             '--exclude', '.Ulysses*',
                              '--exclude', '*.Ulysses_Public_Filter',
                              temp_path + "/", dest_path])
         else:
