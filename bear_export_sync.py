@@ -537,8 +537,8 @@ def check_sync_conflict(uuid, ts_last_export):
         uuid = row['ZUNIQUEIDENTIFIER']
         mod_dt = dt_conv(modified)
         dtdate = datetime.datetime.fromtimestamp(mod_dt)
-        print(dtdate.strftime('%Y-%m-%d %H:%M'))
-        print(title, ts_last_export, mod_dt)
+        # print(dtdate.strftime('%Y-%m-%d %H:%M'))
+        # print(title, ts_last_export, mod_dt)
         conflict = mod_dt > ts_last_export
     conn.close()
     return conflict
