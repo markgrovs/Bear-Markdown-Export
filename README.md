@@ -1,9 +1,7 @@
 ## Markdown export and sync of Bear notes
 _Version 1.3.1, 2018-02-05 at 20:22 EST_
 
-Python script for export and roundtrip sync of Bear's notes to OneDrive, Dropbox, etc. Edit or share online in any browser: [OneDrive](http://OneDrive.com) has a nice online plain text editor and Dropbox has a nice markdown preview, and allows for comments on your shared notes.
-
-You can also use a markdown editor on Windows or Android with Dropbox or OneDrive. Remote edits and new notes get synced back into Bear with this script.
+Python script for export and roundtrip sync of Bear's notes to OneDrive, Dropbox, etc. and edit online with [StackEdit](https://stackedit.io/app), or use a markdown editor like *Typora* on Windows or a suitable app on Android. Remote edits and new notes get synced back into Bear with this script.
 
 This is a concept/beta version, and please feel free to improve or modify as needed. But please be careful! both `rsync` and `shutil.rmtree` are powerful commands that can wipe clean a whole folder tree or even your complete HD if used incorrectly!
 
