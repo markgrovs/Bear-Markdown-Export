@@ -1,9 +1,12 @@
 ## Markdown export and sync of Bear notes
-_Version 1.3.1, 2018-02-05 at 20:22 EST_
+_Version 1.3.2, 2018-02-06 at 11:55 EST_
 
 Python script for export and roundtrip sync of Bear's notes to OneDrive, Dropbox, etc. and edit online with [StackEdit](https://stackedit.io/app), or use a markdown editor like *Typora* on Windows or a suitable app on Android. Remote edits and new notes get synced back into Bear with this script.
 
-NOTE! This is a free to use version, and please improve or modify as needed. But do be careful! both `rsync` and `shutil.rmtree` used here, are powerful commands that can wipe clean a whole folder tree or even your complete HD if paths are set incorrectly! Also, be safe, take a fresh backup of both Bear and your Mac before first run.
+Set up seamless syncing with Ulysses’ external folders on Mac, with images included! Write and add photos in Bear, reorder, glue, and publish, export, or print with styles in Ulysses. Bears and butterflies are best friends ;)  
+(PS. The manual order you set for notes in Ulysses' external folder, is maintained during syncs, unless title is changed.) 
+
+BEAR IN MIND! This is a free to use version, and please improve or modify as needed. But do be careful! both `rsync` and `shutil.rmtree` used here, are powerful commands that can wipe clean a whole folder tree or even your complete HD if paths are set incorrectly! Also, be safe, take a fresh backup of both Bear and your Mac before first run.
 
 *See also: [Bear Power Pack](https://github.com/rovest/Bear-Power-Pack/blob/master/README.md)*
 
@@ -20,8 +23,7 @@ Edit your Bear notes online in browser on [OneDrive.com](https://onedrive.live.c
 
 Read and edit your Bear notes on *Windows* or *Android* with any markdown editor of choice. Remote edits or new notes will be synced back into Bear again. *Typora* works great on Windows, and displays images of text bundles as well.
 
-Set up seamless syncing with Ulysses’ external folders on Mac, with images included!  
-Just remember to edit that folder settings to `.textbundle` and `Inline Links`!
+NOTE! If syncing with Ulysses’ external folders on Mac, remember to edit that folder settings to `.textbundle` and `Inline Links`!
 
 Run script manually or add it to a cron job for automatic syncing (every 5 – 15 minutes, or whatever you prefer).  
 ([LaunchD Task Scheduler](https://itunes.apple.com/us/app/launchd-task-scheduler/id620249105?mt=12) Is easy to configure and works very well for this) 
