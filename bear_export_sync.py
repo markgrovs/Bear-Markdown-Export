@@ -4,26 +4,26 @@
 
 '''
 # Markdown export from Bear sqlite database 
-Version 1.3.3, 2018-02-06 at 13:36 EST
+Version 1.3.3, 2018-02-06 at 14:36 EST
 github/rovest, rorves@twitter
 
-## Syncing external updates:
-
-First checking for Changes in Markdown files (previously exported from Bear)
+## Sync external updates:
+First checks for changes in external Markdown files (previously exported from Bear)
 * Replacing text in original note with callback-url replace command   
   (Keeping original creation date)
-  If Changes in title it will be added just below original title
+  If changes in title it will be added just below original title
 * New notes are added to Bear (with x-callback-url command)
 * Backing up original note as file to BearSyncBackup folder  
   (unless a sync conflict, then both notes will be there)
-* 
 
+## Export:
 Then exporting Markdown from Bear sqlite db.
 * check_if_modified() on database.sqlite to see if export is needed
 * Uses rsync for copying, so only markdown files of changed sheets will be updated  
   and synced by Dropbox (or other sync services)
 * "Hide" tags with period: ".#tag" from being seen as H1 in other Markdown apps.   
   (This is removed if sync-back above)
+* Or hide tags in HTML comment blocks like: `<!-- #mytag -->` if `hide_tags_in_comment_block = True`
 * Makes subfolders named with first tag in note if `make_tag_folders = True`
 * Files can now be copied to multiple tag-folders if `multi_tags = True`
 * Export can now be restricted to a list of spesific tags: `limit_export_to_tags = ['bear/github', 'writings']`  
@@ -32,15 +32,16 @@ or leave list empty for all notes: `limit_export_to_tags = []`
 * Or export as textbundles with images included 
 '''
 
-make_tag_folders = True # Exports to folders using first tag only, if `multi_tag_folders = False`
-multi_tag_folders = True # Copies notes to all 'tag-paths' found in note!
+make_tag_folders = True  # Exports to folders using first tag only, if `multi_tag_folders = False`
+multi_tag_folders = True  # Copies notes to all 'tag-paths' found in note!
+hide_tags_in_comment_block = True  # Hide tags in HTML comments: `<!-- #mytag -->`
 
 # The following two lists are more or less mutually exclusive, so use only one of them.
 # (You can use both if you have some nested tags where that makes sense)
 # Also, they only work if `make_tag_folders = True`.
-only_export_these_tags = [] # Leave this list empty for all notes! See below for sample
+only_export_these_tags = []  # Leave this list empty for all notes! See below for sample
 # only_export_these_tags = ['bear/github', 'writings'] 
-no_export_tags = [] # If a tag in note matches one in this list, it will not be exported.
+no_export_tags = []  # If a tag in note matches one in this list, it will not be exported.
 # no_export_tags = ['private', '.inbox', 'love letters', 'banking'] 
 
 # Set only one of the folowing to True 
@@ -69,7 +70,7 @@ HOME = os.getenv('HOME', '')
 # NOTE! if 'Bear Notes' is left blank, all other files in my_sync_folder will be deleted!! 
 export_path = os.path.join(HOME, my_sync_folder, 'Bear Notes')
 # NOTE! "export_path" is used for sync-back to Bear, so don't change this variable name!
-multi_export = [(export_path, True)] # only one folder output here. 
+multi_export = [(export_path, True)]  # only one folder output here. 
 # Use if you want export to severa places like: Dropbox and OneDrive, etc. See below
 
 # Sample for multi folder export:
@@ -283,12 +284,18 @@ def write_time_stamp():
 
 def hide_tags(md_text):
     # Hide tags from being seen as H1, by placing `period+space` at start of line:
-    md_text =  re.sub(r'(\n)[ \t]*(\#[\w.]+)', r'\1. \2', md_text)
+    if hide_tags_in_comment_block:
+        md_text =  re.sub(r'(\n)[ \t]*(\#[\w.].+)', r'\1<!-- \2 -->', md_text)
+    else:
+        md_text =  re.sub(r'(\n)[ \t]*(\#[\w.]+)', r'\1. \2', md_text)
     return md_text
 
 
 def restore_tags(md_text):
     # Tags back to normal Bear tags, stripping the `period+space` at start of line:
+    # if hide_tags_in_comment_block:
+    md_text =  re.sub(r'(\n)<!--[ \t]*(\#[\w].+?) -->', r'\1\2', md_text)
+    # else:
     md_text =  re.sub(r'(\n)\.[ \t]*(\#[\w]+)', r'\1\2', md_text)
     return md_text
 

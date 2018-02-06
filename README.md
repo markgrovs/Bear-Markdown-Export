@@ -1,5 +1,5 @@
 ## Markdown export and sync of Bear notes
-_Version 1.3.2, 2018-02-06 at 11:55 EST_
+*Version 1.3.3, 2018-02-06 at 14:36 EST*
 
 Python script for export and roundtrip sync of Bear's notes to OneDrive, Dropbox, etc. and edit online with [StackEdit](https://stackedit.io/app), or use a markdown editor like *Typora* on Windows or a suitable app on Android. Remote edits and new notes get synced back into Bear with this script.
 
@@ -20,6 +20,8 @@ BEAR IN MIND! This is a free to use version, and please improve or modify as nee
 (export to folder for first tag only, or all tags.)
 * **NEW:** Can restrict export to a list of specific tags
 * **NEW:** export as `.md` with links to common image repository or as `.textbundles` with images included. 
+* **NEW** hides tags in HTML comments like: `<!-- #mytag -->` if `hide_tags_in_comment_block = True`
+
 
 Edit your Bear notes online in browser on [OneDrive.com](https://onedrive.live.com). It has a ok editor for plain text/markdown. Or with [StackEdit](https://stackedit.io/app), an amazing online markdown editor that can sync with *Dropbox* or *Google Drive*
 
@@ -59,6 +61,7 @@ Then exports all notes from Bear's database.sqlite as plain markdown files:
 * rsync also takes care of deleting trashed notes
 * "Hides” tags from being displayed as H1 in other markdown apps by adding `period+space` in front of first tag on a line:   
 `. #bear #idea #python`   
+* Or hide tags in HTML comment blocks like: `<!-- #mytag -->` if `hide_tags_in_comment_block = True`   
 (these are striped off again when synced back into Bear)
 * Makes subfolders named with first tag in note if `make_tag_folders = True`
 * Files can now be copied to multiple tag-folders if `multi_tags = True`
