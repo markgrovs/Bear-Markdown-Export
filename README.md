@@ -11,9 +11,8 @@ This is a concept/beta version, and please feel free to improve or modify as nee
 
 ## Features
 
-* All Bear notes are exported as plain Markdown  
-	(Text only in this version, so no media or file attachments are exported.  
-	But original image links will still work and display images on return to Bear
+* Bear notes exported as plain Markdown or Textbundles with images.
+* Syncs external edits back to Bear with original image links intact. New external notes are added.
 * **NEW:** Can now make nested folders from tags   
 (export to folder for first tag only, or all tags.)
 * **NEW:** Can restrict export to a list of specific tags
@@ -21,9 +20,9 @@ This is a concept/beta version, and please feel free to improve or modify as nee
 
 Edit your Bear notes online in browser on [OneDrive.com](https://onedrive.live.com). It has a ok editor for plain text/markdown. Or with [StackEdit](https://stackedit.io/app), an amazing online markdown editor that can sync with *Dropbox* or *Google Drive*
 
-Read and edit your Bear notes on *Windows* or *Android* with any markdown editor of choice. Remote edits or new notes will be synced back into Bear again.
+Read and edit your Bear notes on *Windows* or *Android* with any markdown editor of choice. Remote edits or new notes will be synced back into Bear again. *Typora* works great on Windows, and displays images of text bundles as well.
 
-Run it manually or add it to a cron job for automatic syncing (every 5 – 15 minutes, or whatever you prefer).  
+Run script manually or add it to a cron job for automatic syncing (every 5 – 15 minutes, or whatever you prefer).  
 ([LaunchD Task Scheduler](https://itunes.apple.com/us/app/launchd-task-scheduler/id620249105?mt=12) Is easy to configure and works very well for this) 
 
 
@@ -43,7 +42,6 @@ If any changes to title, new title will be added just below original title.
 ### Markdown export to Dropbox, OneDrive, or other:
 Exports all notes from Bear's database.sqlite as plain markdown files:
 
-
 * Checks modified timestamp on database.sqlite, so exports only when needed.
 * Sets Bear note's modification date on exported markdown files.
 * Appends Bear note's creation date to filename to avoid “title-filename-collisions”
@@ -61,7 +59,6 @@ Exports all notes from Bear's database.sqlite as plain markdown files:
 or leave list empty for all notes: `limit_export_to_tags = []`
 * Can export and link to images in common image repository
 * Or export as textbundles with images included 
-
 
 
 You have Bear on Mac but also want your notes on your Android phone, on Linux or Windows machine at your office. Or you want them available online in a browser from any desktop computer. Here is a solution (or call it workaround) for now, until Bear comes with an online, Windows, or Android solution ;)
