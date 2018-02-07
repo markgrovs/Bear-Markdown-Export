@@ -4,7 +4,7 @@
 
 '''
 # Markdown export from Bear sqlite database 
-Version 1.3.7, 2018-02-07 at 16:17 EST
+Version 1.3.8, 2018-02-07 at 17:21 EST
 github/rovest, rorves@twitter
 
 ## Sync external updates:
@@ -561,9 +561,12 @@ def get_tag_from_path(md_text, md_file):
     if sub_path == '':
         tag = '#.inbox'
     elif sub_path.startswith('_'):
-        tag = '#.' + sub_path[1:] + '#'
+        tag = '#.' + sub_path[1:]
     else:
-        tag = '#' + sub_path + '#' 
+        tag = '#' + sub_path
+    tag = tag.strip()
+    if ' ' in tag:
+        tag += "#"
     return md_text.strip() + '\n\n' + tag + '\n'
 
 
