@@ -36,6 +36,7 @@ or leave list empty for all notes: `limit_export_to_tags = []`
 make_tag_folders = True  # Exports to folders using first tag only, if `multi_tag_folders = False`
 multi_tag_folders = True  # Copies notes to all 'tag-paths' found in note!
 hide_tags_in_comment_block = True  # Hide tags in HTML comments: `<!-- #mytag -->`
+set_logging_on = True
 
 # The following two lists are more or less mutually exclusive, so use only one of them.
 # (You can use both if you have some nested tags where that makes sense)
@@ -84,17 +85,18 @@ multi_export = [(export_path, True)]  # only one folder output here.
 # Set this flag fo False only for folders to keep old deleted versions of notes
 # multi_export = [(export_path, True), (export_path_aux1, False), (export_path_aux2, True)]
 
-sync_backup = os.path.join(HOME, my_sync_folder, 'BearSyncBackup') # Backup of original note before sync to Bear.
 temp_path = os.path.join(HOME, 'Temp', 'BearExportTemp')  # NOTE! Do not change the "BearExportTemp" folder name!!!
 bear_db = os.path.join(HOME, 'Library/Containers/net.shinyfrog.bear/Data/Documents/Application Data/database.sqlite')
+sync_backup = os.path.join(HOME, my_sync_folder, 'BearSyncBackup') # Backup of original note before sync to Bear.
+log_file = os.path.join(sync_backup, 'bear_export_sync_log.txt')
 
 # Paths used in image exports:
 bear_image_path = os.path.join(HOME,
     'Library/Containers/net.shinyfrog.bear/Data/Documents/Application Data/Local Files/Note Images')
 assets_path = os.path.join(HOME, export_path, 'BearImages')
 
-sync_ts = ".sync-time.log"
-export_ts = ".export-time.log"
+sync_ts = '.sync-time.log'
+export_ts = '.export-time.log'
 
 sync_ts_file = os.path.join(export_path, sync_ts)
 sync_ts_file_temp = os.path.join(temp_path, sync_ts)
@@ -116,6 +118,12 @@ def main():
         print(export_path)
     else:
         print('No notes needed export')
+
+
+def write_log(message):
+    if set_logging_on == True:
+        time_stamp = datetime.datetime.now().strftime("%Y-%m-%d at %H:%M:%S")
+        write_file(log_file, time_stamp + ': ' + message, 0)
 
 
 def check_db_modified():
@@ -167,7 +175,7 @@ def export_markdown():
 
 def check_image_hybrid(md_text):
     if export_as_hybrids:
-        if re.search(r'!\[.*?\]\(assets/.+?\)', md_text):
+        if re.search(r'\[image:(.+?)\]', md_text):
             return True
         else:
             return False
