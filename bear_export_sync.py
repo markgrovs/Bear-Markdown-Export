@@ -4,7 +4,7 @@
 
 '''
 # Markdown export from Bear sqlite database 
-Version 1.3.4, 2018-02-06 at 20:44 EST
+Version 1.3.5, 2018-02-06 at 22:15 EST
 github/rovest, rorves@twitter
 
 ## Sync external updates:
@@ -193,7 +193,7 @@ def make_text_bundle(md_text, filepath, mod_dt):
 def sub_path_from_tag(temp_path, filename, md_text):
     # Get tags in note:
     pattern1 = r'(?<!\S)\#([.\w\/\-]+)[ \n]?(?!([\/ \w]+\w[#]))'
-    pattern2 = r'(?<![\S])\#([.\w\/ ]+?)\#[ \n]'
+    pattern2 = r'(?<![\S])\#([^ \d][.\w\/ ]+?)\#([ \n]|$)'
     if multi_tag_folders:
         # Files copied to all tag-folders found in note
         tags = []
@@ -201,7 +201,7 @@ def sub_path_from_tag(temp_path, filename, md_text):
             tag = matches[0]
             tags.append(tag)
         for matches2 in re.findall(pattern2, md_text):
-            tag2 = matches2
+            tag2 = matches2[0]
             tags.append(tag2)
         if len(tags) == 0:
             # No tags found, copy to root level only
@@ -238,7 +238,11 @@ def sub_path_from_tag(temp_path, filename, md_text):
         for no_tag in no_export_tags:
             if tag.lower().startswith(no_tag.lower()):
                 return []
-        sub_path = tag.replace('.', '_')    
+        if tag.startswith('.'):
+            # Avoid hidden path if it starts with a '.'
+            sub_path = '_' + tag[1:]     
+        else:
+            sub_path = tag    
         tag_path = os.path.join(temp_path, sub_path)
         if not os.path.exists(tag_path):
             os.makedirs(tag_path)
