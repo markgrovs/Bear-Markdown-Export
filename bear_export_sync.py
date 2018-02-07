@@ -4,7 +4,7 @@
 
 '''
 # Markdown export from Bear sqlite database 
-Version 1.3.8, 2018-02-07 at 17:21 EST
+Version 1.3.8, 2018-02-07 at 18:05 EST
 github/rovest, rorves@twitter
 
 ## Sync external updates:
@@ -330,9 +330,9 @@ def hide_tags(md_text):
 def restore_tags(md_text):
     # Tags back to normal Bear tags, stripping the `period+space` at start of line:
     # if hide_tags_in_comment_block:
-    md_text =  re.sub(r'(\n)<!--[ \t]*(\#[\w].+?) -->', r'\1\2', md_text)
+    md_text =  re.sub(r'(\n)<!--[ \t]*(\#[\w.].+?) -->', r'\1\2', md_text)
     # else:
-    md_text =  re.sub(r'(\n)\.[ \t]*(\#[\w]+)', r'\1\2', md_text)
+    md_text =  re.sub(r'(\n)\.[ \t]*(\#[\w.]+)', r'\1\2', md_text)
     return md_text
 
 
