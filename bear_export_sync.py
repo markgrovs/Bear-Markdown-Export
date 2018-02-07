@@ -4,7 +4,7 @@
 
 '''
 # Markdown export from Bear sqlite database 
-Version 1.3.5, 2018-02-06 at 22:15 EST
+Version 1.3.6, 2018-02-07 at 09:28 EST
 github/rovest, rorves@twitter
 
 ## Sync external updates:
@@ -45,10 +45,12 @@ only_export_these_tags = []  # Leave this list empty for all notes! See below fo
 no_export_tags = []  # If a tag in note matches one in this list, it will not be exported.
 # no_export_tags = ['private', '.inbox', 'love letters', 'banking'] 
 
-# Set only one of the folowing to True 
-    # (if `export_as_textbundles = True`, `export_image_repository` is ignored)
-export_image_repository = False  # Exports as md but link images to image repository exported to: `assets_path` 
 export_as_textbundles = True  # Exports as Textbundles with images included
+export_as_hybrids = True  # Exports as .textbundle only if images included, otherwise as .md
+                          # Only used if `export_as_textbundles = True`
+export_image_repository = False  # Export all notes as md but link images to 
+                                 # a common repository exported to: `assets_path` 
+                                 # Only used if `export_as_textbundles = False`
 
 my_sync_folder = 'Dropbox'  # Change 'Dropbox' to 'Box', 'Onedrive',
     # or whatever folder of sync service you need.
@@ -150,7 +152,10 @@ def export_markdown():
                 note_count += 1
                 # print(filepath)
                 if export_as_textbundles:
-                    make_text_bundle(md_text, filepath, mod_dt)
+                    if check_image_hybrid(md_text):
+                        make_text_bundle(md_text, filepath, mod_dt)                        
+                    else:
+                        write_file(filepath + '.md', md_text, mod_dt)
                 elif export_image_repository:
                     md_proc_text = process_image_links(md_text, filepath)
                     write_file(filepath + '.md', md_proc_text, mod_dt)
@@ -158,6 +163,16 @@ def export_markdown():
                     write_file(filepath + '.md', md_text, mod_dt)
     conn.close()
     return note_count
+
+
+def check_image_hybrid(md_text):
+    if export_as_hybrids:
+        if re.search(r'!\[.*?\]\(assets/.+?\)', md_text):
+            return True
+        else:
+            return False
+    else:
+        return True
 
 
 def make_text_bundle(md_text, filepath, mod_dt):
@@ -265,8 +280,11 @@ def restore_image_links(md_text):
     '''
     MD image links restored back to Bear links
     '''
+    if not re.search(r'!\[.*?\]\(assets/.+?\)', md_text):
+        # No image links in note, return unchanged:
+        return md_text
     if export_as_textbundles:
-        md_text = re.sub(r'!\[\]\(assets/(.+?)_(.+?)\)', r'[image:\1/\2]', md_text)
+        md_text = re.sub(r'!\[(.*?)\]\(assets/(.+?)_(.+?)( ".+?")?\) ?', r'[image:\2/\3]\4 \1', md_text)
     elif export_image_repository :
         # md_text = re.sub(r'\[image:(.+?)\]', r'![](../assets/\1)', md_text)
         md_text = re.sub(r'!\[\]\((\.\./)*BearImages/(.+?)\)', r'[image:\2]', md_text)
@@ -437,10 +455,10 @@ def sync_md_updates():
 def check_if_image_added(md_text, md_file):
     if not '.textbundle/' in md_file:
         return False
-    matches = re.findall(r'!\[\]\(assets/(.+?)\)', md_text)
+    matches = re.findall(r'!\[.*?\]\(assets/(.+?_).+?\)', md_text)
     for image_match in matches:
         'F89CDA3D-3FCC-4E92-88C1-CC4AF46FA733-10097-00002BBE9F7FF804_IMG_2280.JPG'
-        if not re.match(r'\w{8}-\w{4}-\w{4}-\w{4}-\w{12}-\w{5}-\w{16}_', image_match):
+        if not re.match(r'[0-9A-F]{8}-([0-9A-F]{4}-){3}[0-9A-F]{12}-[0-9A-F]{3,5}-[0-9A-F]{16}_', image_match):
             return True
     return False        
 
@@ -452,8 +470,9 @@ def textbundle_to_bear(md_text, md_file, mod_dt):
         uuid = match.group(1)
         # Remove old BearID: from new note
         md_text = re.sub(r'\<\!-- ?\{BearID\:' + uuid + r'\} ?--\>', '', md_text).rstrip() + '\n'
-        md_text = insert_link_top_note(md_text, 'Images added! Link to original note:', uuid)
+        md_text = insert_link_top_note(md_text, 'Images added! Link to original note: ', uuid)
     else:
+        # New textbundle (with images), add path as tag: 
         md_text = get_tag_from_path(md_text, md_file)
     write_file(md_file, md_text, mod_dt)
     bundle = os.path.split(md_file)[0]
@@ -488,7 +507,7 @@ def update_sync_time_file(ts):
 
 def update_bear_note(md_text, md_file, ts, ts_last_export):
     md_text = restore_tags(md_text)
-    md_text = restore_image_links(md_text)    
+    md_text = restore_image_links(md_text)
     uuid = ''
     match = re.search(r'\{BearID:(.+?)\}', md_text)
     sync_conflict = False
@@ -515,7 +534,7 @@ def update_bear_note(md_text, md_file, ts, ts_last_export):
             # subprocess.call(["open", x_trash])
             # time.sleep(.2)
     else:
-        # New external Note, since no Bear uuid found in text: 
+        # New external md Note, since no Bear uuid found in text: 
         # message = '::New external Note - ' + time_stamp_ts(ts) + '::' 
         md_text = get_tag_from_path(md_text, md_file)
         x_create = 'bear://x-callback-url/create?show_window=no' 
