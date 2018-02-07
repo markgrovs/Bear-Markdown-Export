@@ -4,7 +4,7 @@
 
 '''
 # Markdown export from Bear sqlite database 
-Version 1.3.3, 2018-02-06 at 14:36 EST
+Version 1.3.4, 2018-02-06 at 20:44 EST
 github/rovest, rorves@twitter
 
 ## Sync external updates:
@@ -13,6 +13,7 @@ First checks for changes in external Markdown files (previously exported from Be
   (Keeping original creation date)
   If changes in title it will be added just below original title
 * New notes are added to Bear (with x-callback-url command)
+* New notes get tags from sub folder names, or `#.inbox` if root
 * Backing up original note as file to BearSyncBackup folder  
   (unless a sync conflict, then both notes will be there)
 
@@ -417,7 +418,7 @@ def sync_md_updates():
                         textbundle_to_bear(md_text, md_file, ts)
                         print("*** Textbundle imported to Bear")
                     else:
-                        update_bear_note(md_text, ts, ts_last_export)
+                        update_bear_note(md_text, md_file, ts, ts_last_export)
                         print("*** Bear Note Updated")
     if updates_found:
         # Give Bear time to process updates:
@@ -448,6 +449,8 @@ def textbundle_to_bear(md_text, md_file, mod_dt):
         # Remove old BearID: from new note
         md_text = re.sub(r'\<\!-- ?\{BearID\:' + uuid + r'\} ?--\>', '', md_text).rstrip() + '\n'
         md_text = insert_link_top_note(md_text, 'Images added! Link to original note:', uuid)
+    else:
+        md_text = get_tag_from_path(md_text, md_file)
     write_file(md_file, md_text, mod_dt)
     bundle = os.path.split(md_file)[0]
     os.utime(bundle, (-1, mod_dt))
@@ -479,10 +482,10 @@ def update_sync_time_file(ts):
         datetime.datetime.now().strftime("%Y-%m-%d at %H:%M:%S"), ts)
 
 
-def update_bear_note(md_text, ts, ts_last_export):
-    uuid = ''
+def update_bear_note(md_text, md_file, ts, ts_last_export):
     md_text = restore_tags(md_text)
     md_text = restore_image_links(md_text)    
+    uuid = ''
     match = re.search(r'\{BearID:(.+?)\}', md_text)
     sync_conflict = False
     if match:
@@ -508,10 +511,26 @@ def update_bear_note(md_text, ts, ts_last_export):
             # subprocess.call(["open", x_trash])
             # time.sleep(.2)
     else:
-        message = '::New external Note - ' + time_stamp_ts(ts) + '::' 
+        # New external Note, since no Bear uuid found in text: 
+        # message = '::New external Note - ' + time_stamp_ts(ts) + '::' 
+        md_text = get_tag_from_path(md_text, md_file)
         x_create = 'bear://x-callback-url/create?show_window=no' 
-        bear_x_callback(x_create, md_text, message, '')   
+        bear_x_callback(x_create, md_text, '', '')
     return
+
+
+def get_tag_from_path(md_text, md_file):
+    path = md_file.replace(export_path, '')[1:]
+    sub_path = os.path.split(path)[0]
+    if '.textbundle' in sub_path:
+        sub_path = os.path.split(sub_path)[0]
+    if sub_path == '':
+        tag = '#.inbox'
+    elif sub_path.startswith('_'):
+        tag = '#.' + sub_path[1:] + '#'
+    else:
+        tag = '#' + sub_path + '#' 
+    return md_text.strip() + '\n\n' + tag + '\n'
 
 
 def bear_x_callback(x_command, md_text, message, orig_title):
