@@ -4,7 +4,7 @@
 
 '''
 # Markdown export from Bear sqlite database 
-Version 1.3.6, 2018-02-07 at 09:28 EST
+Version 1.3.7, 2018-02-07 at 16:17 EST
 github/rovest, rorves@twitter
 
 ## Sync external updates:
@@ -35,6 +35,7 @@ or leave list empty for all notes: `limit_export_to_tags = []`
 
 make_tag_folders = True  # Exports to folders using first tag only, if `multi_tag_folders = False`
 multi_tag_folders = True  # Copies notes to all 'tag-paths' found in note!
+                          # Only active if `make_tag_folders = True`
 hide_tags_in_comment_block = True  # Hide tags in HTML comments: `<!-- #mytag -->`
 set_logging_on = True
 
@@ -53,7 +54,7 @@ export_image_repository = False  # Export all notes as md but link images to
                                  # a common repository exported to: `assets_path` 
                                  # Only used if `export_as_textbundles = False`
 
-my_sync_folder = 'Dropbox'  # Change 'Dropbox' to 'Box', 'Onedrive',
+my_sync_service = 'Dropbox'  # Change 'Dropbox' to 'Box', 'Onedrive',
     # or whatever folder of sync service you need.
 
 # NOTE! Your user 'HOME' path and '/Bear Notes' is added below!
@@ -71,8 +72,8 @@ import fnmatch
 
 HOME = os.getenv('HOME', '')
 
-# NOTE! if 'Bear Notes' is left blank, all other files in my_sync_folder will be deleted!! 
-export_path = os.path.join(HOME, my_sync_folder, 'Bear Notes')
+# NOTE! if 'Bear Notes' is left blank, all other files in my_sync_service will be deleted!! 
+export_path = os.path.join(HOME, my_sync_service, 'Bear Notes')
 # NOTE! "export_path" is used for sync-back to Bear, so don't change this variable name!
 multi_export = [(export_path, True)]  # only one folder output here. 
 # Use if you want export to severa places like: Dropbox and OneDrive, etc. See below
@@ -87,7 +88,7 @@ multi_export = [(export_path, True)]  # only one folder output here.
 
 temp_path = os.path.join(HOME, 'Temp', 'BearExportTemp')  # NOTE! Do not change the "BearExportTemp" folder name!!!
 bear_db = os.path.join(HOME, 'Library/Containers/net.shinyfrog.bear/Data/Documents/Application Data/database.sqlite')
-sync_backup = os.path.join(HOME, my_sync_folder, 'BearSyncBackup') # Backup of original note before sync to Bear.
+sync_backup = os.path.join(HOME, my_sync_service, 'BearSyncBackup') # Backup of original note before sync to Bear.
 log_file = os.path.join(sync_backup, 'bear_export_sync_log.txt')
 
 # Paths used in image exports:
@@ -114,16 +115,20 @@ def main():
         if export_image_repository and not export_as_textbundles:
             copy_bear_images()
         # notify('Export completed')
-        print(note_count, 'notes exported to:')
-        print(export_path)
+        write_log(str(note_count) + ' notes exported to: ' + export_path)
     else:
-        print('No notes needed export')
+        print('*** No notes needed exports')
 
 
 def write_log(message):
     if set_logging_on == True:
+        if not os.path.exists(sync_backup):
+            os.makedirs(sync_backup)
         time_stamp = datetime.datetime.now().strftime("%Y-%m-%d at %H:%M:%S")
-        write_file(log_file, time_stamp + ': ' + message, 0)
+        message = message.replace(export_path + '/', '')
+        with open(log_file, 'a', encoding='utf-8') as f:
+            f.write(time_stamp + ': ' + message + '\n')
+    print(message)
 
 
 def check_db_modified():
@@ -341,17 +346,15 @@ def clean_title(title):
 
 
 def write_file(filename, file_content, modified):
-    f = open(filename, "w", encoding='utf-8')
-    f.write(file_content)
-    f.close()
+    with open(filename, "w", encoding='utf-8') as f:
+        f.write(file_content)
     if modified > 0:
         os.utime(filename, (-1, modified))
 
 
 def read_file(file_name):
-    f = open(file_name, "r", encoding='utf-8')
-    file_content = f.read()
-    f.close()
+    with open(file_name, "r", encoding='utf-8') as f:
+        file_content = f.read()
     return file_content
 
 
@@ -446,10 +449,10 @@ def sync_md_updates():
                     backup_ext_note(md_file)
                     if check_if_image_added(md_text, md_file):
                         textbundle_to_bear(md_text, md_file, ts)
-                        print("*** Textbundle imported to Bear")
+                        write_log('Imported to Bear: ' + md_file)
                     else:
                         update_bear_note(md_text, md_file, ts, ts_last_export)
-                        print("*** Bear Note Updated")
+                        write_log('Bear Note Updated: ' + md_file)
     if updates_found:
         # Give Bear time to process updates:
         time.sleep(3)
@@ -640,7 +643,7 @@ def save_to_backup(filename, md_text, ts):
         synced_file = file_part + " - " + str(count).zfill(2) + ".md"
         count += 1
     write_file(synced_file, md_text, ts)
-    print("*** Copied file to sync_backup: " + filename)
+    write_log('Copied to sync_backup: ' + filename)
 
 
 def notify(message):
@@ -652,8 +655,7 @@ def notify(message):
         subprocess.call(['/Applications/terminal-notifier.app/Contents/MacOS/terminal-notifier',
                          '-message', message, "-title", title, '-sound', 'default'])
     except:
-        print('* "terminal-notifier.app" is missing!')
-    # print("* Message:", str(message.encode("utf-8")))
+        write_log('"terminal-notifier.app" is missing!')        
     return
 
 

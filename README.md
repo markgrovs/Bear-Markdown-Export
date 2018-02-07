@@ -1,5 +1,5 @@
 ## Markdown export and sync of Bear notes
-*Version 1.3.5, 2018-02-06 at 22:15 EST*
+*Version 1.3.7, 2018-02-07 at 16:17 EST*
 
 Python script for export and roundtrip sync of Bear's notes to OneDrive, Dropbox, etc. and edit online with [StackEdit](https://stackedit.io/app), or use a markdown editor like *Typora* on Windows or a suitable app on Android. Remote edits and new notes get synced back into Bear with this script.
 
@@ -15,13 +15,17 @@ BEAR IN MIND! This is a free to use version, and please improve or modify as nee
 ## Features
 
 * Bear notes exported as plain Markdown or Textbundles with images.
-* Syncs external edits back to Bear with original image links intact. New external notes are added.
-* **NEW:** Can now make nested folders from tags   
-(export to folder for first tag only, or all tags.)
-* **NEW:** Can restrict export to a list of specific tags
-* **NEW:** export as `.md` with links to common image repository or as `.textbundles` with images included. 
-* **NEW** hides tags in HTML comments like: `<!-- #mytag -->` if `hide_tags_in_comment_block = True`
-
+* Syncs external edits back to Bear with original image links intact. 
+* New external `.md` files or `.textbundles` are added.  
+(Tags created from sub folder name)
+* Export option: Make nested folders from tags.   
+For first tag only, or all tags (duplicates notes)
+* Export option: Include or exclude export of notes with specific tags.
+* Export option: Export as `.textbundles` with images included. 
+* Or as: `.md` with links to common image repository 
+* Export option: Hide tags in HTML comments like: `<!-- #mytag -->` if `hide_tags_in_comment_block = True`
+* **NEW** Hybrid export: `.textbundles` of notes with images, otherwise regular `.md` (Makes it easier to browse and edit on other platforms.)
+* **NEW** Writes log to `bear_export_sync_log.txt` in `BearSyncBackup` folder.
 
 Edit your Bear notes online in browser on [OneDrive.com](https://onedrive.live.com). It has a ok editor for plain text/markdown. Or with [StackEdit](https://stackedit.io/app), an amazing online markdown editor that can sync with *Dropbox* or *Google Drive*
 
