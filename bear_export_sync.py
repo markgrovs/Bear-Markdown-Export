@@ -621,11 +621,10 @@ def backup_bear_note(uuid):
         md_text = insert_link_top_note(md_text, 'Link to updated note: ', uuid)
         dtdate = datetime.datetime.fromtimestamp(cre_dt)
         filename = clean_title(title) + dtdate.strftime(' - %Y-%m-%d_%H%M')
-        # This is really a Bear text file, not exactly markdown.
-        # save_to_backup(filename, md_text, mod_dt)
         if not os.path.exists(sync_backup):
             os.makedirs(sync_backup)
         file_part = os.path.join(sync_backup, filename) 
+        # This is a Bear text file, not exactly markdown.
         backup_file = file_part + ".txt"
         count = 2
         while os.path.exists(backup_file):
@@ -636,20 +635,6 @@ def backup_bear_note(uuid):
         filename2 = os.path.split(backup_file)[1]
         write_log('Original to sync_backup: ' + filename2)
     return title
-
-
-def save_to_backup(filename, md_text, mod_dt):
-    if not os.path.exists(sync_backup):
-        os.makedirs(sync_backup)
-    synced_file = os.path.join(sync_backup, filename)
-    count = 2
-    while os.path.exists(synced_file):
-        # Adding sequence number to identical filenames, preventing overwrite:
-        file_part = re.sub(r"(( - \d\d)?\.md)", r"", synced_file)
-        synced_file = file_part + " - " + str(count).zfill(2) + ".md"
-        count += 1
-    write_file(synced_file, md_text, mod_dt)
-    write_log('Original to sync_backup: ' + filename)
 
 
 def insert_link_top_note(md_text, message, uuid):
