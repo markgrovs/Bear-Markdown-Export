@@ -4,7 +4,7 @@
 
 '''
 # Markdown export from Bear sqlite database 
-Version 1.3.9, 2018-02-07 at 20:27 EST
+Version 1.3.10, 2018-02-08 at 07:38 EST
 github/rovest, rorves@twitter
 
 ## Sync external updates:
@@ -191,11 +191,11 @@ def make_text_bundle(md_text, filepath, mod_dt):
     '''
     Exports as Textbundles with images included 
     '''
-    filepath += '.textbundle'
-    assets = os.path.join(filepath, 'assets')    
-    if not os.path.exists(filepath):
-        os.makedirs(filepath)
-        os.makedirs(assets)
+    bundle_path = filepath + '.textbundle'
+    assets_path = os.path.join(bundle_path, 'assets')    
+    if not os.path.exists(bundle_path):
+        os.makedirs(bundle_path)
+        os.makedirs(assets_path)
         
     info = '''{
     "transient" : true,
@@ -208,13 +208,13 @@ def make_text_bundle(md_text, filepath, mod_dt):
         image_name = match
         new_name = image_name.replace('/', '_')
         source = os.path.join(bear_image_path, image_name)
-        target = os.path.join(bear_image_path, assets, new_name)
+        target = os.path.join(assets_path, new_name)
         shutil.copy2(source, target)
 
     md_text = re.sub(r'\[image:(.+?)/(.+?)\]', r'![](assets/\1_\2)', md_text)
-    write_file(filepath + '/text.md', md_text, mod_dt)
-    write_file(filepath + '/info.json', info, mod_dt)
-    os.utime(filepath, (-1, mod_dt))
+    write_file(bundle_path + '/text.md', md_text, mod_dt)
+    write_file(bundle_path + '/info.json', info, mod_dt)
+    os.utime(bundle_path, (-1, mod_dt))
 
 
 def sub_path_from_tag(temp_path, filename, md_text):
@@ -596,10 +596,6 @@ def check_sync_conflict(uuid, ts_last_export):
         modified = row['ZMODIFICATIONDATE']
         uuid = row['ZUNIQUEIDENTIFIER']
         mod_dt = dt_conv(modified)
-        # title = row['ZTITLE']
-        # dtdate = datetime.datetime.fromtimestamp(mod_dt)
-        # print(dtdate.strftime('%Y-%m-%d %H:%M'))
-        # print(title, ts_last_export, mod_dt)
         conflict = mod_dt > ts_last_export
     return conflict
 

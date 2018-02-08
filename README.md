@@ -1,5 +1,5 @@
 ## Markdown export and sync of Bear notes
-*Version 1.3.9, 2018-02-07 at 20:27 EST*
+*Version 1.3.10, 2018-02-08 at 07:38 EST*
 
 Python script for export and roundtrip sync of Bear's notes to OneDrive, Dropbox, etc. and edit online with [StackEdit](https://stackedit.io/app), or use a markdown editor like *Typora* on Windows or a suitable app on Android. Remote edits and new notes get synced back into Bear with this script.
 
