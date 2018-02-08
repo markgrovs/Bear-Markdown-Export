@@ -4,7 +4,7 @@
 
 '''
 # Markdown export from Bear sqlite database 
-Version 1.3.8, 2018-02-07 at 18:05 EST
+Version 1.3.9, 2018-02-07 at 20:27 EST
 github/rovest, rorves@twitter
 
 ## Sync external updates:
@@ -140,10 +140,10 @@ def check_db_modified():
 
 
 def export_markdown():
-    conn = sqlite3.connect(bear_db)
-    conn.row_factory = sqlite3.Row
-    query = "SELECT * FROM `ZSFNOTE` WHERE `ZTRASHED` LIKE '0'"
-    c = conn.execute(query)
+    with sqlite3.connect(bear_db) as conn:
+        conn.row_factory = sqlite3.Row
+        query = "SELECT * FROM `ZSFNOTE` WHERE `ZTRASHED` LIKE '0'"
+        c = conn.execute(query)
     note_count = 0
     for row in c:
         title = row['ZTITLE']
@@ -174,7 +174,6 @@ def export_markdown():
                     write_file(filepath + '.md', md_proc_text, mod_dt)
                 else:
                     write_file(filepath + '.md', md_text, mod_dt)
-    conn.close()
     return note_count
 
 
@@ -498,15 +497,14 @@ def backup_ext_note(md_file):
         bundle_name = os.path.split(bundle_path)[1]
         target = os.path.join(sync_backup, bundle_name)
         bundle_raw = os.path.splitext(target)[0]
-
         count = 2
         while os.path.exists(target):
             # Adding sequence number to identical filenames, preventing overwrite:
-            bundle_raw = re.sub(r"(( - \d\d)?\.textbundle)", r"", target)
             target = bundle_raw + " - " + str(count).zfill(2) + ".textbundle"
             count += 1
         shutil.copytree(bundle_path, target)
     else:
+        # Overwrite former bacups of incoming changes, only keeps last one:
         shutil.copy2(md_file, sync_backup + '/')
 
 
@@ -536,7 +534,7 @@ def update_bear_note(md_text, md_file, ts, ts_last_export):
             bear_x_callback(x_create, md_text, message, '')   
         else:
             # Regular external update
-            orig_title = backup_bear_note(uuid, ts)
+            orig_title = backup_bear_note(uuid)
             # message = '::External update: ' + time_stamp_ts(ts) + '::'   
             x_replace = 'bear://x-callback-url/add-text?show_window=no&mode=replace&id=' + uuid
             bear_x_callback(x_replace, md_text, '', orig_title)
@@ -589,53 +587,58 @@ def bear_x_callback(x_command, md_text, message, orig_title):
 
 def check_sync_conflict(uuid, ts_last_export):
     conflict = False
-    # Stub: Check modified date of original note in Bear sqlite db!
-    conn = sqlite3.connect(bear_db)
-    conn.row_factory = sqlite3.Row
-    query = "SELECT * FROM `ZSFNOTE` WHERE `ZTRASHED` LIKE '0' AND `ZUNIQUEIDENTIFIER` LIKE '" + uuid + "'"
-    c = conn.execute(query)
+    # Check modified date of original note in Bear sqlite db!
+    with sqlite3.connect(bear_db) as conn:
+        conn.row_factory = sqlite3.Row
+        query = "SELECT * FROM `ZSFNOTE` WHERE `ZTRASHED` LIKE '0' AND `ZUNIQUEIDENTIFIER` LIKE '" + uuid + "'"
+        c = conn.execute(query)
     for row in c:
-        title = row['ZTITLE']
         modified = row['ZMODIFICATIONDATE']
         uuid = row['ZUNIQUEIDENTIFIER']
         mod_dt = dt_conv(modified)
-        dtdate = datetime.datetime.fromtimestamp(mod_dt)
+        # title = row['ZTITLE']
+        # dtdate = datetime.datetime.fromtimestamp(mod_dt)
         # print(dtdate.strftime('%Y-%m-%d %H:%M'))
         # print(title, ts_last_export, mod_dt)
         conflict = mod_dt > ts_last_export
-    conn.close()
     return conflict
 
 
-def backup_bear_note(uuid, mod_dt):
+def backup_bear_note(uuid):
     # Get single note from Bear sqlite db!
-    conn = sqlite3.connect(bear_db)
-    conn.row_factory = sqlite3.Row
-    query = "SELECT * FROM `ZSFNOTE` WHERE `ZUNIQUEIDENTIFIER` LIKE '" + uuid + "'"
-    c = conn.execute(query)
+    with sqlite3.connect(bear_db) as conn:
+        conn.row_factory = sqlite3.Row
+        query = "SELECT * FROM `ZSFNOTE` WHERE `ZUNIQUEIDENTIFIER` LIKE '" + uuid + "'"
+        c = conn.execute(query)
     title = ''
     for row in c:  # Will only get one row if uuid is found!
         title = row['ZTITLE']
         md_text = row['ZTEXT'].rstrip()
-        # modified = row['ZMODIFICATIONDATE']
-        # mod_dt = dt_conv(modified)
+        modified = row['ZMODIFICATIONDATE']
+        mod_dt = dt_conv(modified)
+        created = row['ZCREATIONDATE']
+        cre_dt = dt_conv(created)
         md_text = insert_link_top_note(md_text, 'Link to updated note: ', uuid)
-        dtdate = datetime.datetime.fromtimestamp(mod_dt)
-        filename = clean_title(title) + dtdate.strftime(' - %Y-%m-%d_%H%M') + '.md'
-        save_to_backup(filename, md_text, mod_dt)
-    conn.close()
+        dtdate = datetime.datetime.fromtimestamp(cre_dt)
+        filename = clean_title(title) + dtdate.strftime(' - %Y-%m-%d_%H%M')
+        # This is really a Bear text file, not exactly markdown.
+        # save_to_backup(filename, md_text, mod_dt)
+        if not os.path.exists(sync_backup):
+            os.makedirs(sync_backup)
+        file_part = os.path.join(sync_backup, filename) 
+        backup_file = file_part + ".txt"
+        count = 2
+        while os.path.exists(backup_file):
+            # Adding sequence number to identical filenames, preventing overwrite:
+            backup_file = file_part + " - " + str(count).zfill(2) + ".txt"
+            count += 1
+        write_file(backup_file, md_text, mod_dt)
+        filename2 = os.path.split(backup_file)[1]
+        write_log('Original to sync_backup: ' + filename2)
     return title
 
 
-def insert_link_top_note(md_text, message, uuid):
-    lines = md_text.split('\n')
-    title = re.sub(r'^#{1,6} ', r'', lines[0])
-    link = '::' + message + '[' + title + '](bear://x-callback-url/open-note?id=' + uuid + ')::'        
-    lines.insert(1, link) 
-    return '\n'.join(lines)
-
-
-def save_to_backup(filename, md_text, ts):
+def save_to_backup(filename, md_text, mod_dt):
     if not os.path.exists(sync_backup):
         os.makedirs(sync_backup)
     synced_file = os.path.join(sync_backup, filename)
@@ -645,8 +648,16 @@ def save_to_backup(filename, md_text, ts):
         file_part = re.sub(r"(( - \d\d)?\.md)", r"", synced_file)
         synced_file = file_part + " - " + str(count).zfill(2) + ".md"
         count += 1
-    write_file(synced_file, md_text, ts)
-    write_log('Copied to sync_backup: ' + filename)
+    write_file(synced_file, md_text, mod_dt)
+    write_log('Original to sync_backup: ' + filename)
+
+
+def insert_link_top_note(md_text, message, uuid):
+    lines = md_text.split('\n')
+    title = re.sub(r'^#{1,6} ', r'', lines[0])
+    link = '::' + message + '[' + title + '](bear://x-callback-url/open-note?id=' + uuid + ')::'        
+    lines.insert(1, link) 
+    return '\n'.join(lines)
 
 
 def notify(message):
