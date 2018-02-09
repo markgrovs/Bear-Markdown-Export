@@ -516,7 +516,8 @@ def import_external_files():
                     # md_text == re.sub(r'\n' + bullet + ' ', r'\n- ', md_text)
                     md_text = md_text.replace('\n• ', '\n- ')
                 import_date = datetime.datetime.now().strftime('%Y-%m-%d')
-                if re.search(r'!\[.*?\]\(assets/.+?\)', md_text):
+                if re.search(r'!\[.*?\]\(assets/.+?\)', md_text) \
+                and '.textbundle/' in md_file:
                     # New textbundle (with images)
                     bundle = os.path.split(md_file)[0]
                     md_text = get_tag_from_path(md_text, bundle, import_path, False, '#.imported/' + import_date)
