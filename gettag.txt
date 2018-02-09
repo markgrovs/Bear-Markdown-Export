@@ -1,1 +1,0 @@
-["ghosts\n0","my fair ghost\n0","compassion\n0","Orange\n7","Green\n2"]
