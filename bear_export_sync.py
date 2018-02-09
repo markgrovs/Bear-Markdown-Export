@@ -509,6 +509,12 @@ def import_external_files():
                 md_file = os.path.join(root, filename)
                 mod_dt = os.path.getmtime(md_file)
                 md_text = read_file(md_file)
+                if pattern == '*.txt':
+                    # Replace rich text bullets to markdown:
+                    # (When using with Zapier and Gmail to Dropbox zap.)
+                    # bullet = u'\u2022'
+                    # md_text == re.sub(r'\n' + bullet + ' ', r'\n- ', md_text)
+                    md_text = md_text.replace('\n• ', '\n- ')
                 import_date = datetime.datetime.now().strftime('%Y-%m-%d')
                 if re.search(r'!\[.*?\]\(assets/.+?\)', md_text):
                     # New textbundle (with images)
