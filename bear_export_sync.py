@@ -1,11 +1,21 @@
 # encoding=utf-8
 # python3.6
 # bear_export_sync.py
+# Developed with Visual Studio Code with MS Python Extension.
 
 '''
 # Markdown export from Bear sqlite database 
-Version 1.3.10, 2018-02-08 at 07:38 EST
+Version 1.4.1, 2018-02-09 at 00:46 EST
 github/rovest, rorves@twitter
+
+## NEW import function: 
+* Imports markdown or textbundles from nested folders under a `BearImport/input/' folder
+* Foldernames are converted to Bear tags
+* Also imports MacOS file tags as Bear tags
+* Imported notes are also tagged with `#.imported/yyyy-MM-dd` for convenience.
+* Import-files are then cleared to a `BearImport/done/' folder
+* Use for email input to Bear with Zapier's "Gmail to Dropbox" zap.
+* Or for import of nested groups and sheets from Ulysses, images and keywords included.
 
 ## Sync external updates:
 First checks for changes in external Markdown files (previously exported from Bear)
@@ -57,7 +67,7 @@ export_image_repository = False  # Export all notes as md but link images to
 my_sync_service = 'Dropbox'  # Change 'Dropbox' to 'Box', 'Onedrive',
     # or whatever folder of sync service you need.
 
-# NOTE! Your user 'HOME' path and '/Bear Notes' is added below!
+# NOTE! Your user 'HOME' path and '/BearNotes' is added below!
 # NOTE! So do not change anything below here!!!
 
 import sqlite3
@@ -69,22 +79,25 @@ import os
 import time
 import shutil
 import fnmatch
+import json
 
 HOME = os.getenv('HOME', '')
 
-# NOTE! if 'Bear Notes' is left blank, all other files in my_sync_service will be deleted!! 
-export_path = os.path.join(HOME, my_sync_service, 'Bear Notes')
+# NOTE! if 'BearNotes' is left blank, all other files in my_sync_service will be deleted!! 
+export_path = os.path.join(HOME, my_sync_service, 'BearNotes')
 # NOTE! "export_path" is used for sync-back to Bear, so don't change this variable name!
 multi_export = [(export_path, True)]  # only one folder output here. 
 # Use if you want export to severa places like: Dropbox and OneDrive, etc. See below
-
 # Sample for multi folder export:
-# export_path_aux1 = os.path.join(HOME, 'OneDrive', 'Bear Notes')
-# export_path_aux2 = os.path.join(HOME, 'Box', 'Bear Notes')
+# export_path_aux1 = os.path.join(HOME, 'OneDrive', 'BearNotes')
+# export_path_aux2 = os.path.join(HOME, 'Box', 'BearNotes')
 
 # NOTE! All files in export path not in Bear will be deleted if delete flag is "True"!
 # Set this flag fo False only for folders to keep old deleted versions of notes
 # multi_export = [(export_path, True), (export_path_aux1, False), (export_path_aux2, True)]
+
+# This is a pure import folder for files from other apps. or incoming emails via "Gmail to Dropbox" Zapier zap.
+bear_import = os.path.join(HOME, my_sync_service, 'BearImport')
 
 temp_path = os.path.join(HOME, 'Temp', 'BearExportTemp')  # NOTE! Do not change the "BearExportTemp" folder name!!!
 bear_db = os.path.join(HOME, 'Library/Containers/net.shinyfrog.bear/Data/Documents/Application Data/database.sqlite')
@@ -104,9 +117,14 @@ sync_ts_file_temp = os.path.join(temp_path, sync_ts)
 export_ts_file_exp = os.path.join(export_path, export_ts)
 export_ts_file = os.path.join(temp_path, export_ts)
 
+gettag_sh = os.path.join(HOME, 'temp/gettag.sh')
+gettag_txt = os.path.join(HOME, 'temp/gettag.txt')
+
 
 def main():
+    init_gettag_script()
     sync_md_updates()
+    import_external_files()
     if check_db_modified():
         delete_old_temp_files()
         note_count = export_markdown()
@@ -434,7 +452,7 @@ def sync_md_updates():
     # Update synced timestamp file:
     update_sync_time_file(0)
     file_types = ('*.md', '*.txt', '*.markdown')
-    for root, dirnames, filenames in os.walk(export_path):
+    for (root, dirnames, filenames) in os.walk(export_path):
         '''
         This step walks down into all sub folders, if any.
         '''
@@ -443,6 +461,10 @@ def sync_md_updates():
                 md_file = os.path.join(root, filename)
                 ts = os.path.getmtime(md_file)
                 if ts > ts_last_sync:
+                    if not updates_found:  # Yet
+                        # Wait 5 sec at first for external files to finish downloading from dropbox.
+                        # Otherwise images in textbundles might be missing in import:
+                        time.sleep(5)
                     updates_found = True
                     md_text = read_file(md_file)
                     backup_ext_note(md_file)
@@ -462,6 +484,66 @@ def sync_md_updates():
     return updates_found
 
 
+def import_external_files():
+    import_path = os.path.join(bear_import, 'input')
+    import_done = os.path.join(bear_import, 'done')
+    if not os.path.exists(import_path):
+        os.makedirs(import_path)
+        print('New path, use it for import to Bear:', import_path)
+        return False
+    if not os.path.exists(import_done):
+        os.makedirs(import_done)
+    files_found = False
+    file_types = ('*.md', '*.txt', '*.markdown')
+    for (root, dirnames, filenames) in os.walk(import_path):
+        '''
+        This step walks down into all sub folders, if any.
+        '''
+        for pattern in file_types:
+            for filename in fnmatch.filter(filenames, pattern):
+                if not files_found:  # Yet
+                    # Wait 5 sec at first for external files to finish downloading from dropbox.
+                    # Otherwise images in textbundles might be missing in import:
+                    time.sleep(5)
+                files_found = True
+                md_file = os.path.join(root, filename)
+                mod_dt = os.path.getmtime(md_file)
+                md_text = read_file(md_file)
+                import_date = datetime.datetime.now().strftime('%Y-%m-%d')
+                if re.search(r'!\[.*?\]\(assets/.+?\)', md_text):
+                    # New textbundle (with images)
+                    bundle = os.path.split(md_file)[0]
+                    md_text = get_tag_from_path(md_text, bundle, import_path, False, '#.imported/' + import_date)
+                    write_file(md_file, md_text, mod_dt)
+                    os.utime(bundle, (-1, mod_dt))
+                    subprocess.call(['open', '-a', '/applications/bear.app', bundle])
+                    time.sleep(0.5)
+                    move_import_to_done(bundle, import_path, import_done)
+                else:
+                    md_text = get_tag_from_path(md_text, md_file, import_path, False, '#.imported/' + import_date)                    
+                    # New external md-file: 
+                    # message = '::New external Note - ' + time_stamp_ts(ts) + '::' 
+                    x_create = 'bear://x-callback-url/create?show_window=no' 
+                    bear_x_callback(x_create, md_text, '', '')
+                    move_import_to_done(md_file, import_path, import_done)
+                write_log('Imported to Bear: ' + md_file)
+    if files_found:
+        # cleanup empty input folders:
+        # ???
+        # For Bear to finish import:
+        time.sleep(3)
+    return files_found
+
+
+def move_import_to_done(file_bundle, import_path, import_done):
+    file_path = file_bundle.replace(import_path + '/', '')
+    sub_path = os.path.split(file_path)[0]
+    dest_path = os.path.join(import_done, sub_path)
+    if not os.path.exists(dest_path):
+        os.makedirs(dest_path)
+    shutil.move(file_bundle, dest_path)
+
+
 def check_if_image_added(md_text, md_file):
     if not '.textbundle/' in md_file:
         return False
@@ -475,6 +557,7 @@ def check_if_image_added(md_text, md_file):
 
 def textbundle_to_bear(md_text, md_file, mod_dt):
     md_text = restore_tags(md_text)
+    bundle = os.path.split(md_file)[0]
     match = re.search(r'\{BearID:(.+?)\}', md_text)
     if match:
         uuid = match.group(1)
@@ -483,9 +566,8 @@ def textbundle_to_bear(md_text, md_file, mod_dt):
         md_text = insert_link_top_note(md_text, 'Images added! Link to original note: ', uuid)
     else:
         # New textbundle (with images), add path as tag: 
-        md_text = get_tag_from_path(md_text, md_file)
+        md_text = get_tag_from_path(md_text, bundle, export_path)
     write_file(md_file, md_text, mod_dt)
-    bundle = os.path.split(md_file)[0]
     os.utime(bundle, (-1, mod_dt))
     subprocess.call(['open', '-a', '/applications/bear.app', bundle])
     time.sleep(0.5)
@@ -545,27 +627,49 @@ def update_bear_note(md_text, md_file, ts, ts_last_export):
     else:
         # New external md Note, since no Bear uuid found in text: 
         # message = '::New external Note - ' + time_stamp_ts(ts) + '::' 
-        md_text = get_tag_from_path(md_text, md_file)
+        md_text = get_tag_from_path(md_text, md_file, export_path)
         x_create = 'bear://x-callback-url/create?show_window=no' 
         bear_x_callback(x_create, md_text, '', '')
     return
 
 
-def get_tag_from_path(md_text, md_file):
-    path = md_file.replace(export_path, '')[1:]
+def get_tag_from_path(md_text, md_file, root_path, inbox_for_root=True, extra_tag=''):
+    # extra_tag should be passed as '#tag' or '#space tag#'
+    path = md_file.replace(root_path, '')[1:]
     sub_path = os.path.split(path)[0]
+    tags = []
     if '.textbundle' in sub_path:
         sub_path = os.path.split(sub_path)[0]
-    if sub_path == '':
-        tag = '#.inbox'
+    if sub_path == '': 
+        if inbox_for_root:
+            tag = '#.inbox'
+        else:
+            tag = ''
     elif sub_path.startswith('_'):
-        tag = '#.' + sub_path[1:]
+        tag = '#.' + sub_path[1:].strip()
     else:
-        tag = '#' + sub_path
-    tag = tag.strip()
-    if ' ' in tag:
-        tag += "#"
-    return md_text.strip() + '\n\n' + tag + '\n'
+        tag = '#' + sub_path.strip()
+    if ' ' in tag: 
+        tag += "#"               
+    if tag != '': 
+        tags.append(tag)
+    if extra_tag != '':
+        tags.append(extra_tag)
+    for tag in get_file_tags(md_file):
+        tag = '#' + tag.strip()
+        if ' ' in tag: tag += "#"                   
+        tags.append(tag)
+    return md_text.strip() + '\n\n' + ' '.join(tags) + '\n'
+
+
+def get_file_tags(md_file):
+    try:
+        subprocess.call([gettag_sh, md_file, gettag_txt])
+        text = re.sub(r'\\n\d{1,2}', r'', read_file(gettag_txt))
+        tag_list = json.loads(text)
+        return tag_list
+    except:
+        return []
 
 
 def bear_x_callback(x_command, md_text, message, orig_title):
@@ -640,6 +744,23 @@ def insert_link_top_note(md_text, message, uuid):
     lines.insert(1, link) 
     return '\n'.join(lines)
 
+
+def init_gettag_script():
+    gettag_script = \
+    '''#!/bin/bash
+    if [[ ! -e $1 ]] ; then
+    echo 'file missing or not specified'
+    exit 0
+    fi
+    JSON="$(xattr -p com.apple.metadata:_kMDItemUserTags "$1" | xxd -r -p | plutil -convert json - -o -)"
+    echo $JSON > "$2"
+    '''
+    temp = os.path.join(HOME, 'temp')
+    if not os.path.exists(temp):
+        os.makedirs(temp)
+    write_file(gettag_sh, gettag_script, 0)
+    subprocess.call(['chmod', '777', gettag_sh])
+    
 
 def notify(message):
     title = "ul_sync_md.py"
