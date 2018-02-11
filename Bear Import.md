@@ -1,4 +1,4 @@
-## Bear Markdown and textbundle import with file and folder tags.
+## Bear Markdown and textbundle import – with tags from file and folder.
 
 ***bear_import.py***  
 *Version 1.0.0 - 2018-02-10 at 17:37 EST*
