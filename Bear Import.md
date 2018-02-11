@@ -3,7 +3,7 @@
 ***bear_import.py***  
 *Version 1.0.0 - 2018-02-10 at 17:37 EST*
 
-*See also:** **[bear_export_sync.py](https://github.com/rovest/Bear-Markdown-Export/blob/master/README.md)** *for export with sync-back.*
+*See also:* **[bear_export_sync.py](https://github.com/rovest/Bear-Markdown-Export/blob/master/README.md)** *for export with sync-back.*
 
 
 ### Features 
