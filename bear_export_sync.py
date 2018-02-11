@@ -8,15 +8,6 @@
 Version 1.4.1, 2018-02-09 at 00:46 EST
 github/rovest, rorves@twitter
 
-## NEW import function: 
-* Imports markdown or textbundles from nested folders under a `BearImport/input/' folder
-* Foldernames are converted to Bear tags
-* Also imports MacOS file tags as Bear tags
-* Imported notes are also tagged with `#.imported/yyyy-MM-dd` for convenience.
-* Import-files are then cleared to a `BearImport/done/' folder
-* Use for email input to Bear with Zapier's "Gmail to Dropbox" zap.
-* Or for import of nested groups and sheets from Ulysses, images and keywords included.
-
 ## Sync external updates:
 First checks for changes in external Markdown files (previously exported from Bear)
 * Replacing text in original note with callback-url replace command   
@@ -96,9 +87,6 @@ multi_export = [(export_path, True)]  # only one folder output here.
 # Set this flag fo False only for folders to keep old deleted versions of notes
 # multi_export = [(export_path, True), (export_path_aux1, False), (export_path_aux2, True)]
 
-# This is a pure import folder for files from other apps. or incoming emails via "Gmail to Dropbox" Zapier zap.
-bear_import = os.path.join(HOME, my_sync_service, 'BearImport')
-
 temp_path = os.path.join(HOME, 'Temp', 'BearExportTemp')  # NOTE! Do not change the "BearExportTemp" folder name!!!
 bear_db = os.path.join(HOME, 'Library/Containers/net.shinyfrog.bear/Data/Documents/Application Data/database.sqlite')
 sync_backup = os.path.join(HOME, my_sync_service, 'BearSyncBackup') # Backup of original note before sync to Bear.
@@ -124,7 +112,6 @@ gettag_txt = os.path.join(HOME, 'temp/gettag.txt')
 def main():
     init_gettag_script()
     sync_md_updates()
-    import_external_files()
     if check_db_modified():
         delete_old_temp_files()
         note_count = export_markdown()
@@ -482,73 +469,6 @@ def sync_md_updates():
         # The logic is not 100% fool proof, but should be close to 99.99%
         sync_md_updates() # Recursive call
     return updates_found
-
-
-def import_external_files():
-    import_path = os.path.join(bear_import, 'input')
-    import_done = os.path.join(bear_import, 'done')
-    if not os.path.exists(import_path):
-        os.makedirs(import_path)
-        print('New path, use it for import to Bear:', import_path)
-        return False
-    if not os.path.exists(import_done):
-        os.makedirs(import_done)
-    files_found = False
-    file_types = ('*.md', '*.txt', '*.markdown')
-    for (root, dirnames, filenames) in os.walk(import_path):
-        '''
-        This step walks down into all sub folders, if any.
-        '''
-        for pattern in file_types:
-            for filename in fnmatch.filter(filenames, pattern):
-                if not files_found:  # Yet
-                    # Wait 5 sec at first for external files to finish downloading from dropbox.
-                    # Otherwise images in textbundles might be missing in import:
-                    time.sleep(5)
-                files_found = True
-                md_file = os.path.join(root, filename)
-                mod_dt = os.path.getmtime(md_file)
-                md_text = read_file(md_file)
-                if pattern == '*.txt':
-                    # Replace rich text bullets to markdown:
-                    # (When using with Zapier and Gmail to Dropbox zap.)
-                    # bullet = u'\u2022'
-                    # md_text == re.sub(r'\n' + bullet + ' ', r'\n- ', md_text)
-                    md_text = md_text.replace('\n• ', '\n- ')
-                import_date = datetime.datetime.now().strftime('%Y-%m-%d')
-                if re.search(r'!\[.*?\]\(assets/.+?\)', md_text) \
-                and '.textbundle/' in md_file:
-                    # New textbundle (with images)
-                    bundle = os.path.split(md_file)[0]
-                    md_text = get_tag_from_path(md_text, bundle, import_path, False, '#.imported/' + import_date)
-                    write_file(md_file, md_text, mod_dt)
-                    os.utime(bundle, (-1, mod_dt))
-                    subprocess.call(['open', '-a', '/applications/bear.app', bundle])
-                    time.sleep(0.5)
-                    move_import_to_done(bundle, import_path, import_done)
-                else:
-                    md_text = get_tag_from_path(md_text, md_file, import_path, False, '#.imported/' + import_date)                    
-                    # New external md-file: 
-                    # message = '::New external Note - ' + time_stamp_ts(ts) + '::' 
-                    x_create = 'bear://x-callback-url/create?show_window=no' 
-                    bear_x_callback(x_create, md_text, '', '')
-                    move_import_to_done(md_file, import_path, import_done)
-                write_log('Imported to Bear: ' + md_file)
-    if files_found:
-        # cleanup empty input folders:
-        # ???
-        # For Bear to finish import:
-        time.sleep(3)
-    return files_found
-
-
-def move_import_to_done(file_bundle, import_path, import_done):
-    file_path = file_bundle.replace(import_path + '/', '')
-    sub_path = os.path.split(file_path)[0]
-    dest_path = os.path.join(import_done, sub_path)
-    if not os.path.exists(dest_path):
-        os.makedirs(dest_path)
-    shutil.move(file_bundle, dest_path)
 
 
 def check_if_image_added(md_text, md_file):
