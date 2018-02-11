@@ -5,8 +5,10 @@
 
 '''
 # Markdown export from Bear sqlite database 
-Version 1.4.1, 2018-02-09 at 00:46 EST
+Version 1.3.11, 2018-02-11 at 07:43 EST
 github/rovest, rorves@twitter
+
+See also: bear_import.py for auto import to bear script.
 
 ## Sync external updates:
 First checks for changes in external Markdown files (previously exported from Bear)
@@ -38,7 +40,6 @@ make_tag_folders = True  # Exports to folders using first tag only, if `multi_ta
 multi_tag_folders = True  # Copies notes to all 'tag-paths' found in note!
                           # Only active if `make_tag_folders = True`
 hide_tags_in_comment_block = True  # Hide tags in HTML comments: `<!-- #mytag -->`
-set_logging_on = True
 
 # The following two lists are more or less mutually exclusive, so use only one of them.
 # (You can use both if you have some nested tags where that makes sense)
@@ -73,6 +74,8 @@ import fnmatch
 import json
 
 HOME = os.getenv('HOME', '')
+
+set_logging_on = True
 
 # NOTE! if 'BearNotes' is left blank, all other files in my_sync_service will be deleted!! 
 export_path = os.path.join(HOME, my_sync_service, 'BearNotes')
@@ -133,7 +136,6 @@ def write_log(message):
         message = message.replace(export_path + '/', '')
         with open(log_file, 'a', encoding='utf-8') as f:
             f.write(time_stamp + ': ' + message + '\n')
-    print(message)
 
 
 def check_db_modified():
