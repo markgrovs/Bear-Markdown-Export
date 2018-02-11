@@ -32,10 +32,13 @@ Or skip all this and run it manually :)
 ### Get mail to Bear with "Zapier Gmail to Dropbox" action
 
 1. Create a free zapier.com account.
-2. Use a gmail account of choice and setup a filter for incoming mail if needed. 
-3. Make new Zap. See: [Add new Gmail emails to Dropbox as text files](https://zapier.com/apps/dropbox/integrations/gmail/10323/add-new-gmail-emails-to-dropbox-as-text-files)
-4. Set zap Dropbox output to `{user}/Dropbox/BearImport/Input` 
+2. Use a dedicated gmail account or setup a filter assigning a label used by zapier. 
+3. Make a Zapier zap. See: [Add new Gmail emails to Dropbox as text files](https://zapier.com/apps/dropbox/integrations/gmail/10323/add-new-gmail-emails-to-dropbox-as-text-files)
+	1. Set zap to monitor inbox with label (assigned by filter in step 2.)
+	2. Set zap Dropbox output to `{user}/Dropbox/BearImport/Input` 
 
+- Zap will now check for new email (with matching gmail label) every 15 minutes and script above will import to Bear.
+- Alternately on iOS: use this workflow (import to Bear from same Dropbox folder): [Gmail-DB zap to Bear](https://workflow.is/workflows/827b9b2518d5476ca0158a67d5b492fa)
 
 ### Import from Ulysses’ external folders on Mac
 
