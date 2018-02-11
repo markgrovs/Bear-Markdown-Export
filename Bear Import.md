@@ -3,7 +3,7 @@
 ***bear_import.py***  
 *Version 1.0.0 - 2018-02-10 at 17:37 EST*
 
-**See: **bear_export_sync.py** for export and sync-back.
+**See: **[bear_export_sync.py](https://github.com/rovest/Bear-Markdown-Export/blob/master/README.md)** for export and sync-back.
 
 ### NEW import function: 
 * Imports markdown or textbundles from nested folders under a `BearImport/input/' folder
