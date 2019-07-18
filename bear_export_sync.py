@@ -91,13 +91,13 @@ multi_export = [(export_path, True)]  # only one folder output here.
 # multi_export = [(export_path, True), (export_path_aux1, False), (export_path_aux2, True)]
 
 temp_path = os.path.join(HOME, 'Temp', 'BearExportTemp')  # NOTE! Do not change the "BearExportTemp" folder name!!!
-bear_db = os.path.join(HOME, 'Library/Containers/net.shinyfrog.bear/Data/Documents/Application Data/database.sqlite')
+bear_db = os.path.join(HOME, 'Library/Group Containers/9K33E3U3T4.net.shinyfrog.bear/Application Data/database.sqlite')
 sync_backup = os.path.join(HOME, my_sync_service, 'BearSyncBackup') # Backup of original note before sync to Bear.
 log_file = os.path.join(sync_backup, 'bear_export_sync_log.txt')
 
 # Paths used in image exports:
 bear_image_path = os.path.join(HOME,
-    'Library/Containers/net.shinyfrog.bear/Data/Documents/Application Data/Local Files/Note Images')
+    'Library/Group Containers/9K33E3U3T4.net.shinyfrog.bear/Application Data/Local Files/Note Images')
 assets_path = os.path.join(HOME, export_path, 'BearImages')
 
 sync_ts = '.sync-time.log'
