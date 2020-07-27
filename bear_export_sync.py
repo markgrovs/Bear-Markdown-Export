@@ -478,7 +478,6 @@ def check_if_image_added(md_text, md_file):
         return False
     matches = re.findall(r'!\[.*?\]\(assets/(.+?_).+?\)', md_text)
     for image_match in matches:
-        'F89CDA3D-3FCC-4E92-88C1-CC4AF46FA733-10097-00002BBE9F7FF804_IMG_2280.JPG'
         if not re.match(r'[0-9A-F]{8}-([0-9A-F]{4}-){3}[0-9A-F]{12}-[0-9A-F]{3,5}-[0-9A-F]{16}_', image_match):
             return True
     return False        
